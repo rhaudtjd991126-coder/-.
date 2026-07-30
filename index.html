@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학급 경제 시스템 Portal & Kiosk & ATM</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Google Fonts: Inter & Noto Sans KR -->
+  <!-- Google Fonts: Noto Sans KR -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <script>
@@ -32,14 +33,13 @@
       }
     }
   </script>
-
+  
   <style>
     body {
       font-family: 'Noto Sans KR', sans-serif;
       background-color: #f1f5f9;
       user-select: none;
     }
-    
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -54,7 +54,6 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
-
     @keyframes pulse-ring {
       0% { transform: scale(0.95); opacity: 0.8; }
       50% { transform: scale(1.1); opacity: 0.4; }
@@ -63,7 +62,6 @@
     .animate-nfc-pulse {
       animation: pulse-ring 2s infinite ease-in-out;
     }
-
     .atm-screen-glow {
       box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.15);
     }
@@ -73,7 +71,7 @@
 
   <script>
     // ★ 본인의 구글 앱스크립트 배포 URL을 여기에 넣어주세요!
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVGrESRsY3xpGxTAf6ZEl88TX1IFSMUFTEh-8o-D4dgVVhYoaN1isYCzcROAAXj1is/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVGrESRsY3xpGxTAf6ZEI88TX1IFSMUFTEh-80-D4dgVVhYoaN1isYCzcROAAXj1is/exec";
   </script>
 
   <!-- Global Toast Notification Container -->
@@ -93,7 +91,7 @@
           <p class="text-xs text-slate-400">스마트 학급 금융 & 매점 & ATM 시스템</p>
         </div>
       </div>
-
+      
       <!-- Header Action Buttons -->
       <div id="header-user-info" class="flex items-center gap-3 hidden">
         <div class="text-right hidden sm:block">
@@ -126,7 +124,7 @@
         <h2 class="text-2xl font-bold">학급 금융 시스템</h2>
         <p class="text-xs text-blue-200 mt-1">로그인하거나 새 계정을 생성하세요</p>
       </div>
-
+      
       <!-- Auth Switch Tabs -->
       <div class="flex border-b border-slate-200 bg-slate-50 text-sm font-bold text-center">
         <button id="auth-tab-login" onclick="switchAuthTab('login')" class="flex-1 py-3 text-blue-600 border-b-2 border-blue-600 transition">
@@ -148,17 +146,15 @@
             <input type="text" id="login-student-id" required placeholder="예: 10101" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
           </div>
         </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리 이상)</label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
               <i class="fa-solid fa-key"></i>
             </span>
-            <input type="password" id="login-pin" maxlength="6" required placeholder="••••" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+            <input type="password" id="login-pin" maxlength="6" required placeholder="...." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
           </div>
         </div>
-
         <button type="submit" id="btn-login-submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition flex justify-center items-center gap-2">
           <span>로그인</span>
           <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -174,22 +170,18 @@
             <option value="teacher">교사 (관리자)</option>
           </select>
         </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">학번 / 아이디</label>
           <input type="text" id="reg-student-id" required placeholder="예: 10101 또는 teacher" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
         </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">이름</label>
           <input type="text" id="reg-name" required placeholder="예: 홍길동" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
         </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리 이상)</label>
-          <input type="password" id="reg-pin" maxlength="6" required placeholder="••••" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:ring-2 focus:ring-blue-500">
+          <input type="password" id="reg-pin" maxlength="6" required placeholder="...." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:ring-2 focus:ring-blue-500">
         </div>
-
         <button type="submit" id="btn-reg-submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition flex justify-center items-center gap-2 mt-2">
           <span>회원가입 완료</span>
           <i class="fa-solid fa-user-plus text-xs"></i>
@@ -225,7 +217,6 @@
               <i class="fa-solid fa-plus"></i> 금융 상품 신청
             </button>
           </div>
-
           <div id="student-accounts-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
 
           <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 mt-6">
@@ -251,7 +242,7 @@
         <div class="space-y-4">
           <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
             <h3 class="font-bold text-slate-800 text-md mb-4 flex items-center gap-2">
-              <i class="fa-solid fa-paper-plane text-emerald-600"></i> 계좌 간 송금
+              <i class="fa-solid fa-paper-plane text-emerald-600"></i> 계좌간 송금
             </h3>
             <form id="student-transfer-form" onsubmit="handleStudentTransfer(event)" class="space-y-4">
               <div>
@@ -263,7 +254,7 @@
                 <input type="text" id="transfer-to-acc" required placeholder="예: ACC-170000000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">송금 금액 (원)</label>
+                <label class="block text-xs font-medium text-slate-600 mb-1">송금 금액(원)</label>
                 <input type="number" id="transfer-amount" min="1" required placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
               </div>
               <div>
@@ -340,7 +331,7 @@
             <input type="text" id="teacher-dep-student-id" placeholder="예: 10101" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">지급 금액 (원)</label>
+            <label class="block text-xs font-medium text-slate-600 mb-1">지급 금액(원)</label>
             <input type="number" id="teacher-dep-amount" min="1" placeholder="0" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
@@ -382,7 +373,6 @@
         </form>
       </div>
     </section>
-
   </main>
 
   <!-- 4. KIOSK FULLSCREEN MODAL VIEW -->
@@ -401,13 +391,11 @@
         <i class="fa-solid fa-xmark mr-1"></i> 키오스크 종료
       </button>
     </div>
-
     <div class="flex-grow flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
       <div class="flex-grow flex flex-col min-w-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
         <div id="kiosk-store-tabs" class="flex border-b border-slate-100 overflow-x-auto p-2 bg-slate-50 gap-2"></div>
         <div id="kiosk-items-grid" class="flex-grow p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
       </div>
-
       <div class="w-full md:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
         <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
           <h3 class="font-bold text-md flex items-center gap-2">
@@ -419,7 +407,7 @@
         <div class="p-5 bg-slate-50 border-t border-slate-200 space-y-4">
           <div class="flex justify-between items-center">
             <span class="text-xs font-medium text-slate-500">총 결제 금액</span>
-            <span id="kiosk-cart-total" class="text-2xl font-black text-emerald-600">0 원</span>
+            <span id="kiosk-cart-total" class="text-2xl font-black text-emerald-600">0원</span>
           </div>
           <button onclick="openNfcPaymentModal()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base rounded-2xl shadow-lg shadow-emerald-600/30 transition flex justify-center items-center gap-2">
             <i class="fa-solid fa-wifi"></i>
@@ -447,9 +435,7 @@
           <i class="fa-solid fa-power-off mr-1"></i> ATM 종료
         </button>
       </div>
-
       <div id="atm-screen-content" class="flex-grow p-6 md:p-10 flex flex-col justify-between overflow-y-auto"></div>
-
       <div class="bg-slate-950 px-6 py-3 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -481,7 +467,7 @@
       <div>
         <h3 class="text-xl font-extrabold text-amber-400 mb-2">보이스피싱 / 금융사기 예방 안내</h3>
         <p class="text-xs text-slate-300 leading-relaxed text-left bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
-          ⚠️ <strong>송금 전 꼭 확인하세요!</strong><br><br>
+          ▲ <strong>송금 전 꼭 확인하세요!</strong><br><br>
           • 검찰, 경찰, 금융감독원이나 선배/타인의 지시로 돈을 이체하고 계신가요?<br>
           • 학급 내 강요나 사기에 의한 송금은 즉시 담임 선생님께 알려주세요.<br>
           • 상대방의 계좌번호 및 이체 금액을 다시 한번 꼼꼼히 확인하세요.
@@ -508,12 +494,10 @@
         <h3 id="nfc-modal-title" class="text-lg font-bold text-slate-800">NFC 학생증 태그</h3>
         <p id="nfc-modal-desc" class="text-xs text-slate-500 mt-1">NFC 리더기에 학생증을 태그하세요</p>
       </div>
-
       <div class="space-y-2 text-left pt-2 border-t border-slate-100">
         <label class="block text-[11px] font-semibold text-slate-500">학생 선택 (태그 대용)</label>
         <select id="nfc-simulated-student-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></select>
       </div>
-
       <div class="flex gap-2">
         <button onclick="closeNfcModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-200">
           취소
@@ -525,6 +509,7 @@
     </div>
   </div>
 
+  <!-- SCRIPT ENGINE -->
   <script>
     /* GLOBAL STATE */
     let currentUser = null;
@@ -533,7 +518,6 @@
     let globalKioskItems = [];
     let globalPending = [];
     let globalUsers = [];
-
     let cart = [];
     let currentStoreFilter = "ALL";
     let atmPendingTransferData = null;
@@ -590,7 +574,6 @@
     function showToast(msg, type = "info") {
       const container = document.getElementById("toast-container");
       const toast = document.createElement("div");
-      
       let bgColor = "bg-slate-900";
       let icon = "fa-circle-info";
       
@@ -599,8 +582,9 @@
 
       toast.className = `pointer-events-auto ${bgColor} text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold transform transition duration-300 ease-out translate-y-2 opacity-0`;
       toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${msg}</span>`;
-
+      
       container.appendChild(toast);
+      
       requestAnimationFrame(() => {
         toast.classList.remove("translate-y-2", "opacity-0");
       });
@@ -611,28 +595,31 @@
       }, 3500);
     }
 
-   function showView(viewId) {
-  // 1. 모든 화면 일단 숨기기
-  document.getElementById("view-login").classList.add("hidden");
-  document.getElementById("view-student").classList.add("hidden");
-  document.getElementById("view-teacher").classList.add("hidden");
+    function showView(viewId) {
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-student").classList.add("hidden");
+      document.getElementById("view-teacher").classList.add("hidden");
 
-  // 2. 요청된 화면 켜기
-  const targetView = document.getElementById(viewId);
-  if (targetView) {
-    targetView.classList.remove("hidden");
-  }
+      const targetView = document.getElementById(viewId);
+      if (targetView) {
+        targetView.classList.remove("hidden");
+      }
 
-  // 3. ⭐ [핵심!] 로그인한 사람이 학생인데 '교사 화면'을 열려고 하거나, 
-  //    학생 화면 내부에서 교사 포털이 보이려 하면 강제로 숨겨버립니다!
-  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role !== 'teacher') {
-    const teacherView = document.getElementById("view-teacher");
-    if (teacherView) {
-      teacherView.classList.add("hidden");
-      teacherView.style.setProperty('display', 'none', 'important');
+      checkUserRole(currentUser);
     }
-  }
-}
+
+    function checkUserRole(user) {
+      const teacherView = document.getElementById('view-teacher');
+      if (user && user.role !== 'teacher') {
+        if (teacherView) {
+          teacherView.style.setProperty('display', 'none', 'important');
+        }
+      } else if (user && user.role === 'teacher') {
+        if (teacherView) {
+          teacherView.style.removeProperty('display');
+        }
+      }
+    }
 
     /* AUTH TABS (LOGIN / REGISTER) */
     function switchAuthTab(type) {
@@ -662,19 +649,18 @@
       const btn = document.getElementById("btn-login-submit");
 
       btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 로그인 중...`;
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 로그인 중...';
 
       try {
         const res = await apiPost("login", { student_id, pin });
         currentUser = res.user;
-        checkUserRole(currentUser);
         localStorage.setItem("class_economy_user", JSON.stringify(currentUser));
         showToast("반갑습니다! 로그인되었습니다.", "success");
         onLoginSuccess();
       } catch (err) {
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>로그인</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
+        btn.innerHTML = '<span>로그인</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
       }
     }
 
@@ -688,20 +674,18 @@
       const btn = document.getElementById("btn-reg-submit");
 
       btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 가입 처리 중...`;
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 가입 처리 중...';
 
       try {
         await apiPost("register", { student_id, name, pin, role });
-        showToast("회원가입이 완료되었습니다! 생성한 학번과 PIN으로 로그인해주세요.", "success");
+        showToast("회원가입이 완료되었습니다! 로그인해주세요.", "success");
         document.getElementById("register-form").reset();
-        
-        // 로그인 아이디 채워주고 로그인 탭으로 전환
         document.getElementById("login-student-id").value = student_id;
         switchAuthTab('login');
       } catch (err) {
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>회원가입 완료</span><i class="fa-solid fa-user-plus text-xs"></i>`;
+        btn.innerHTML = '<span>회원가입 완료</span> <i class="fa-solid fa-user-plus text-xs"></i>';
       }
     }
 
@@ -739,7 +723,6 @@
           apiGet("Accounts", { student_id: currentUser.student_id }),
           apiGet("TxHistory", { student_id: currentUser.student_id })
         ]);
-
         globalAccounts = accs;
         renderStudentAccounts(accs);
         renderStudentTxHistory(txs);
@@ -758,11 +741,10 @@
       const transferSelect = document.getElementById("transfer-from-acc");
       container.innerHTML = "";
       transferSelect.innerHTML = "";
-
       let total = 0;
 
-      if (accs.length === 0) {
-        container.innerHTML = `<div class="col-span-2 p-6 bg-white rounded-2xl text-center text-slate-400 text-xs">개설된 계좌가 없습니다.</div>`;
+      if (!accs || accs.length === 0) {
+        container.innerHTML = '<div class="col-span-2 p-6 bg-white rounded-2xl text-center text-slate-400 text-xs">개설된 계좌가 없습니다.</div>';
         document.getElementById("student-total-balance").innerText = "0 원";
         return;
       }
@@ -770,7 +752,6 @@
       accs.forEach(acc => {
         const bal = Number(acc.Balance || 0);
         total += bal;
-
         const card = document.createElement("div");
         card.className = "bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden";
         card.innerHTML = `
@@ -798,14 +779,13 @@
     function renderStudentTxHistory(txs) {
       const tbody = document.getElementById("student-tx-history-tbody");
       tbody.innerHTML = "";
-
-      if (txs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400">거래 내역이 없습니다.</td></tr>`;
+      
+      if (!txs || txs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-slate-400">거래 내역이 없습니다.</td></tr>';
         return;
       }
 
       const sorted = [...txs].reverse();
-
       sorted.forEach(tx => {
         const isDeposit = tx.Type === "DEPOSIT" || tx.Type === "TEACHER_DEPOSIT";
         const dateStr = tx.Timestamp ? new Date(tx.Timestamp).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-";
@@ -835,23 +815,21 @@
         showToast("성공적으로 이체되었습니다.", "success");
         document.getElementById("student-transfer-form").reset();
         loadStudentDashboard();
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     /* PRODUCT APPLICATION MODAL */
     async function openApplyProductModal() {
       const modal = document.getElementById("modal-apply-prod");
       const container = document.getElementById("apply-products-list");
-      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</p>`;
+      container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</p>';
       modal.classList.remove("hidden");
 
       try {
         globalProducts = await apiGet("Products");
         container.innerHTML = "";
-
-        if (globalProducts.length === 0) {
-          container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">신청 가능한 상품이 없습니다.</p>`;
+        if (!globalProducts || globalProducts.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">신청 가능한 상품이 없습니다.</p>';
           return;
         }
 
@@ -885,8 +863,7 @@
         await apiPost("applyProduct", { student_id: currentUser.student_id, prod_id });
         showToast("상품 신청이 접수되었습니다. 담임 교사 승인 후 개설됩니다.", "success");
         closeApplyProductModal();
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     /* TEACHER DASHBOARD */
@@ -918,14 +895,14 @@
 
     async function loadPendingApplications() {
       const tbody = document.getElementById("teacher-pending-tbody");
-      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</td></tr>';
 
       try {
         globalPending = await apiGet("Pending");
         tbody.innerHTML = "";
 
-        if (globalPending.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">대기 중인 신청 건이 없습니다.</td></tr>`;
+        if (!globalPending || globalPending.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400">대기 중인 신청 건이 없습니다.</td></tr>';
           return;
         }
 
@@ -949,7 +926,7 @@
           tbody.appendChild(row);
         });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-rose-500">불러오기 실패</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-rose-500">불러오기 실패</td></tr>';
       }
     }
 
@@ -958,8 +935,7 @@
         await apiPost("approve", { app_id, action_status });
         showToast(`신청이 ${action_status === 'APPROVED' ? '승인' : '거절'} 되었습니다.`, "success");
         loadPendingApplications();
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     async function handleTeacherDepositSubmit(e) {
@@ -972,8 +948,7 @@
         await apiPost("teacherDeposit", { student_id, amount, desc });
         showToast("지급금이 정상적으로 입금되었습니다.", "success");
         document.getElementById("teacher-deposit-form").reset();
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     async function handleAddKioskItemSubmit(e) {
@@ -988,8 +963,7 @@
         await apiPost("addKioskItem", { store_name, category, item_name, price, image_url });
         showToast("매점 상품이 성공적으로 추가되었습니다.", "success");
         document.getElementById("teacher-kiosk-item-form").reset();
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     /* KIOSK MODE & NFC PAYMENT */
@@ -1015,7 +989,6 @@
     function renderKioskStoreTabs() {
       const tabsContainer = document.getElementById("kiosk-store-tabs");
       tabsContainer.innerHTML = "";
-
       const stores = ["ALL", ...new Set(globalKioskItems.map(item => item.Store_Name).filter(Boolean))];
 
       stores.forEach(store => {
@@ -1037,8 +1010,8 @@
 
       const filtered = storeFilter === "ALL" ? globalKioskItems : globalKioskItems.filter(i => i.Store_Name === storeFilter);
 
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">등록된 상품이 없습니다.</div>`;
+      if (!filtered || filtered.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 text-xs">등록된 상품이 없습니다.</div>';
         return;
       }
 
@@ -1053,11 +1026,10 @@
         card.innerHTML = `
           <div>
             <div class="w-full h-28 bg-slate-50 rounded-xl flex items-center justify-center mb-3 overflow-hidden border border-slate-100">
-              ${isHttp ? `
-                <img src="${item.Image_URL}" alt="${item.Item_Name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-cookie-bite text-3xl text-emerald-400\'></i>';">
-              ` : `
-                <i class="${item.Image_URL || 'fa-solid fa-cookie-bite'} text-3xl text-emerald-500 group-hover:scale-110 transition"></i>
-              `}
+              ${isHttp ? 
+                `<img src="${item.Image_URL}" alt="${item.Item_Name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fa-solid fa-cookie-bite text-3xl text-emerald-400\\'></i>';">` : 
+                `<i class="${item.Image_URL || 'fa-solid fa-cookie-bite'} text-3xl text-emerald-500 group-hover:scale-110 transition"></i>`
+              }
             </div>
             <span class="text-[10px] font-bold text-slate-400">${item.Store_Name || '매점'}</span>
             <h4 class="font-bold text-slate-800 text-xs line-clamp-1 mt-0.5">${item.Item_Name}</h4>
@@ -1102,11 +1074,10 @@
     function updateCartUI() {
       const container = document.getElementById("kiosk-cart-items");
       container.innerHTML = "";
-
       let total = 0;
 
       if (cart.length === 0) {
-        container.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">장바구니가 비어 있습니다.</div>`;
+        container.innerHTML = '<div class="py-12 text-center text-slate-400 text-xs">장바구니가 비어 있습니다.</div>';
         document.getElementById("kiosk-cart-total").innerText = "0 원";
         return;
       }
@@ -1142,7 +1113,6 @@
         showToast("장바구니에 상품을 담아주세요.", "error");
         return;
       }
-
       const total = cart.reduce((sum, i) => sum + Number(i.Price) * i.qty, 0);
 
       triggerNfcModal(
@@ -1152,7 +1122,6 @@
           try {
             const accs = await apiGet("Accounts", { student_id: simulatedStudentId });
             const checking = accs.find(a => a.Acc_Type === "CHECKING") || accs[0];
-
             if (!checking) throw new Error("해당 학생의 계좌를 찾을 수 없습니다.");
             if (Number(checking.Balance) < total) throw new Error("잔액이 부족하여 결제할 수 없습니다.");
 
@@ -1167,8 +1136,7 @@
 
             showToast("결제가 완료되었습니다! 이용해 주셔서 감사합니다.", "success");
             clearCart();
-          } catch (err) {
-          }
+          } catch (err) {}
         }
       );
     }
@@ -1192,26 +1160,22 @@
           <h3 class="text-2xl md:text-3xl font-black text-white">원하시는 금융 거래를 선택해 주세요</h3>
           <p class="text-xs text-slate-400">IC 카드 / NFC 학생증을 이용한 통합 금융 서비스</p>
         </div>
-
         <div class="grid grid-cols-2 gap-4 md:gap-6 my-auto">
           <button onclick="atmStepInquiry()" class="p-6 md:p-8 bg-gradient-to-br from-blue-800 to-indigo-900 hover:from-blue-700 hover:to-indigo-800 border border-blue-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
             <i class="fa-solid fa-magnifying-glass-dollar text-4xl text-blue-300 group-hover:scale-110 transition"></i>
             <span class="text-base md:text-lg font-extrabold text-white">예금 조회</span>
             <span class="text-[11px] text-blue-200">잔액 및 거래 내역</span>
           </button>
-
           <button onclick="atmStepDeposit()" class="p-6 md:p-8 bg-gradient-to-br from-emerald-800 to-teal-900 hover:from-emerald-700 hover:to-teal-800 border border-emerald-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
             <i class="fa-solid fa-money-bill-transfer text-4xl text-emerald-300 group-hover:scale-110 transition"></i>
             <span class="text-base md:text-lg font-extrabold text-white">현금 입금</span>
             <span class="text-[11px] text-emerald-200">계좌에 현금 넣기</span>
           </button>
-
           <button onclick="atmStepWithdrawal()" class="p-6 md:p-8 bg-gradient-to-br from-amber-800 to-orange-900 hover:from-amber-700 hover:to-orange-800 border border-amber-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
             <i class="fa-solid fa-hand-holding-dollar text-4xl text-amber-300 group-hover:scale-110 transition"></i>
             <span class="text-base md:text-lg font-extrabold text-white">현금 출금</span>
             <span class="text-[11px] text-amber-200">계좌에서 현금 찾기</span>
           </button>
-
           <button onclick="atmStepTransferInit()" class="p-6 md:p-8 bg-gradient-to-br from-purple-800 to-violet-900 hover:from-purple-700 hover:to-violet-800 border border-purple-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
             <i class="fa-solid fa-paper-plane text-4xl text-purple-300 group-hover:scale-110 transition"></i>
             <span class="text-base md:text-lg font-extrabold text-white">계좌 이체</span>
@@ -1227,7 +1191,7 @@
           const accs = await apiGet("Accounts", { student_id: studentId });
           const container = document.getElementById("atm-screen-content");
           
-          let cardsHtml = accs.map(a => `
+          let cardsHtml = (accs || []).map(a => `
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
               <div>
                 <p class="text-xs text-blue-400 font-bold">${a.Acc_Name} (${a.Acc_Type})</p>
@@ -1260,7 +1224,7 @@
             <input type="text" id="atm-dep-acc" placeholder="예: ACC-17000000" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">입금 금액 (원)</label>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">입금 금액(원)</label>
             <input type="number" id="atm-dep-amount" min="1" placeholder="0" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
           </div>
           <div class="flex gap-3">
@@ -1342,7 +1306,7 @@
             <input type="text" id="atm-tr-to" placeholder="상대방 계좌 ACC-2222" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">이체 금액 (원)</label>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">이체 금액(원)</label>
             <input type="number" id="atm-tr-amount" min="1" placeholder="0" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
           </div>
           <div class="flex gap-3">
@@ -1369,7 +1333,7 @@
 
     function closeVoicePhishingModal(confirmed) {
       document.getElementById("modal-voice-phishing").classList.add("hidden");
-
+      
       if (confirmed && atmPendingTransferData) {
         triggerNfcModal("ATM 계좌 이체 최종 승인", "학생증을 태그하여 이체를 확정합니다", async (studentId) => {
           try {
@@ -1398,12 +1362,11 @@
       nfcCallback = callback;
 
       const select = document.getElementById("nfc-simulated-student-id");
-      select.innerHTML = `<option value="">불러오는 중...</option>`;
-
+      select.innerHTML = '<option value="">불러오는 중...</option>';
       document.getElementById("modal-nfc-tag").classList.remove("hidden");
 
       try {
-        if (globalUsers.length === 0) {
+        if (!globalUsers || globalUsers.length === 0) {
           globalUsers = await apiGet("Users");
         }
         select.innerHTML = "";
@@ -1427,95 +1390,18 @@
       nfcCallback = null;
     }
 
-async function confirmNfcTag() {
+    async function confirmNfcTag() {
       const studentId = document.getElementById("nfc-simulated-student-id").value;
       if (!studentId) {
         showToast("학생을 선택해 주세요.", "error");
         return;
       }
-
       const cb = nfcCallback;
       closeNfcModal();
-
       if (cb) {
         await cb(studentId);
       }
     }
-
-    /* ==========================================================================
-       [1] 자바스크립트 로직 (반드시 <script> 안에 위치!)
-       ========================================================================== */
-    // 1. 교사 계정이 아니면 ATM/키오스크 메뉴 숨기기 함수
-    function checkUserRole(user) {
-  const teacherView = document.getElementById('view-teacher');
-  
-  if (user && user.role !== 'teacher') {
-    // 학생 계정일 경우: 교사 화면 영역을 물리적으로 완전히 숨깁니다 (!important 사용)
-    if (teacherView) {
-      teacherView.style.setProperty('display', 'none', 'important');
-    }
-  } else if (user && user.role === 'teacher') {
-    // 교사 계정일 경우: 정상적으로 보이게 합니다.
-    if (teacherView) {
-      teacherView.style.removeProperty('display');
-      teacherView.classList.remove('hidden');
-    }
-  }
-}
-
-    // 2. ATM/이체 시 보이스피싱 팝업 띄우기
-    let nextStepFunction = null;
-
-    function startBankAction(actionFunction) {
-      nextStepFunction = actionFunction;
-      document.getElementById('voicePhishingModal').style.display = 'block';
-    }
-
-    function confirmVoicePhishing() {
-      document.getElementById('voicePhishingModal').style.display = 'none';
-      document.getElementById('pinInput').value = '';
-      document.getElementById('pinModal').style.display = 'block';
-    }
-
-    // 3. 비밀번호 검수하기
-    function submitPinCheck() {
-      const inputPin = document.getElementById('pinInput').value;
-      
-      if (typeof currentUser !== 'undefined' && currentUser && currentUser.pin) {
-        if (inputPin !== String(currentUser.pin)) {
-          alert("❌ 비밀번호가 틀렸습니다!");
-          return;
-        }
-      }
-
-      document.getElementById('pinModal').style.display = 'none';
-      if (nextStepFunction) nextStepFunction();
-    }
-  </script> <!-- 👈 스크립트 태그가 여기서 끝납니다! -->
-
-  <!-- ==========================================================================
-     [2] HTML 팝업창 화면 요소 (반드시 </script> 밖에 위치!)
-     ========================================================================== -->
-  <!-- 1. 보이스피싱 예방 팝업창 -->
-  <div id="voicePhishingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-    <div style="background:white; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;">
-      <h3 style="color:red;">⚠️ 보이스피싱 예방 안내</h3>
-      <p>검찰, 경찰, 금융감독원이나 모르는 사람에게 전화나 문자로 이체/출금 지시를 받으셨나요?</p>
-      <button onclick="confirmVoicePhishing()" style="padding:10px 15px; background:#28a745; color:white; border:none; border-radius:5px;">이상 없음 (진행)</button>
-      <button onclick="document.getElementById('voicePhishingModal').style.display='none'" style="padding:10px 15px; background:#dc3545; color:white; border:none; border-radius:5px;">취소</button>
-    </div>
-  </div>
-
-  <!-- 2. 비밀번호(PIN) 입력 팝업창 -->
-  <div id="pinModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-    <div style="background:white; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;">
-      <h3>🔐 비밀번호 4자리 입력</h3>
-      <input type="password" id="pinInput" maxlength="4" style="font-size:20px; text-align:center; width:80%; padding:8px; margin:10px 0;">
-      <br>
-      <button onclick="submitPinCheck()" style="padding:10px 15px; background:#007bff; color:white; border:none; border-radius:5px;">확인</button>
-      <button onclick="document.getElementById('pinModal').style.display='none'" style="padding:10px 15px; background:#6c757d; color:white; border:none; border-radius:5px;">취소</button>
-    </div>
-  </div>
-
+  </script>
 </body>
 </html>
