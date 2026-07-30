@@ -1411,7 +1411,7 @@
       nfcCallback = null;
     }
 
-    async function confirmNfcTag() {
+async function confirmNfcTag() {
       const studentId = document.getElementById("nfc-simulated-student-id").value;
       if (!studentId) {
         showToast("학생을 선택해 주세요.", "error");
@@ -1425,6 +1425,74 @@
         await cb(studentId);
       }
     }
-  </script>
+
+    /* ==========================================================================
+       [1] 자바스크립트 로직 (반드시 <script> 안에 위치!)
+       ========================================================================== */
+    // 1. 교사 계정이 아니면 ATM/키오스크 메뉴 숨기기 함수
+    function checkUserRole(user) {
+      if (user && user.role !== 'teacher') {
+        const kioskBtn = document.getElementById('kioskMenuBtn');
+        const atmBtn = document.getElementById('atmMenuBtn');
+        
+        if (kioskBtn) kioskBtn.style.display = 'none';
+        if (atmBtn) atmBtn.style.display = 'none';
+      }
+    }
+
+    // 2. ATM/이체 시 보이스피싱 팝업 띄우기
+    let nextStepFunction = null;
+
+    function startBankAction(actionFunction) {
+      nextStepFunction = actionFunction;
+      document.getElementById('voicePhishingModal').style.display = 'block';
+    }
+
+    function confirmVoicePhishing() {
+      document.getElementById('voicePhishingModal').style.display = 'none';
+      document.getElementById('pinInput').value = '';
+      document.getElementById('pinModal').style.display = 'block';
+    }
+
+    // 3. 비밀번호 검수하기
+    function submitPinCheck() {
+      const inputPin = document.getElementById('pinInput').value;
+      
+      if (typeof currentUser !== 'undefined' && currentUser && currentUser.pin) {
+        if (inputPin !== String(currentUser.pin)) {
+          alert("❌ 비밀번호가 틀렸습니다!");
+          return;
+        }
+      }
+
+      document.getElementById('pinModal').style.display = 'none';
+      if (nextStepFunction) nextStepFunction();
+    }
+  </script> <!-- 👈 스크립트 태그가 여기서 끝납니다! -->
+
+  <!-- ==========================================================================
+     [2] HTML 팝업창 화면 요소 (반드시 </script> 밖에 위치!)
+     ========================================================================== -->
+  <!-- 1. 보이스피싱 예방 팝업창 -->
+  <div id="voicePhishingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+    <div style="background:white; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;">
+      <h3 style="color:red;">⚠️ 보이스피싱 예방 안내</h3>
+      <p>검찰, 경찰, 금융감독원이나 모르는 사람에게 전화나 문자로 이체/출금 지시를 받으셨나요?</p>
+      <button onclick="confirmVoicePhishing()" style="padding:10px 15px; background:#28a745; color:white; border:none; border-radius:5px;">이상 없음 (진행)</button>
+      <button onclick="document.getElementById('voicePhishingModal').style.display='none'" style="padding:10px 15px; background:#dc3545; color:white; border:none; border-radius:5px;">취소</button>
+    </div>
+  </div>
+
+  <!-- 2. 비밀번호(PIN) 입력 팝업창 -->
+  <div id="pinModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+    <div style="background:white; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;">
+      <h3>🔐 비밀번호 4자리 입력</h3>
+      <input type="password" id="pinInput" maxlength="4" style="font-size:20px; text-align:center; width:80%; padding:8px; margin:10px 0;">
+      <br>
+      <button onclick="submitPinCheck()" style="padding:10px 15px; background:#007bff; color:white; border:none; border-radius:5px;">확인</button>
+      <button onclick="document.getElementById('pinModal').style.display='none'" style="padding:10px 15px; background:#6c757d; color:white; border:none; border-radius:5px;">취소</button>
+    </div>
+  </div>
+
 </body>
 </html>
