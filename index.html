@@ -40,7 +40,6 @@
       user-select: none;
     }
     
-    /* Custom Scrollbars */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -56,7 +55,6 @@
       background: #94a3b8;
     }
 
-    /* Pulsing animations for NFC/ATM */
     @keyframes pulse-ring {
       0% { transform: scale(0.95); opacity: 0.8; }
       50% { transform: scale(1.1); opacity: 0.4; }
@@ -66,7 +64,6 @@
       animation: pulse-ring 2s infinite ease-in-out;
     }
 
-    /* ATM Display Glow Effects */
     .atm-screen-glow {
       box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.15);
     }
@@ -75,7 +72,7 @@
 <body class="text-slate-800 min-h-screen flex flex-col justify-between">
 
   <script>
-    // Google Apps Script 배포 웹앱 URL (필요시 아래 URL을 교체하세요)
+    // ★ 본인의 구글 앱스크립트 배포 URL을 여기에 넣어주세요!
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMp2CfYt4NptdIlzog-X38q2PeRNyc3qIh0dmnEBEtXFYvPAn-OLGo5kvU3wmC6F1b-Q/exec";
   </script>
 
@@ -87,7 +84,6 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3 cursor-pointer" onclick="navigateHome()">
         <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-500/30">
-          <i class="fa-solid fa-[#]"></i>
           <i class="fa-solid fa-piggy-bank"></i>
         </div>
         <div>
@@ -120,17 +116,28 @@
   <!-- Main Dynamic View Container -->
   <main id="app-container" class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
     
-    <!-- 1. LOGIN VIEW -->
-    <section id="view-login" class="max-w-md mx-auto my-12 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+    <!-- 1. AUTH (LOGIN / REGISTER) VIEW -->
+    <section id="view-login" class="max-w-md mx-auto my-8 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
       <div class="bg-gradient-to-br from-blue-900 to-indigo-900 p-8 text-white text-center relative overflow-hidden">
         <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl"></div>
         <div class="w-16 h-16 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
           <i class="fa-solid fa-building-columns text-blue-300"></i>
         </div>
-        <h2 class="text-2xl font-bold">학급 금융 로그인</h2>
-        <p class="text-xs text-blue-200 mt-1">학번 및 PIN 번호를 입력하여 접속하세요</p>
+        <h2 class="text-2xl font-bold">학급 금융 시스템</h2>
+        <p class="text-xs text-blue-200 mt-1">로그인하거나 새 계정을 생성하세요</p>
       </div>
 
+      <!-- Auth Switch Tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-50 text-sm font-bold text-center">
+        <button id="auth-tab-login" onclick="switchAuthTab('login')" class="flex-1 py-3 text-blue-600 border-b-2 border-blue-600 transition">
+          로그인
+        </button>
+        <button id="auth-tab-register" onclick="switchAuthTab('register')" class="flex-1 py-3 text-slate-400 hover:text-slate-600 transition">
+          회원가입
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
       <form id="login-form" onsubmit="handleLoginSubmit(event)" class="p-8 space-y-5">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">학번 / 아이디</label>
@@ -138,12 +145,12 @@
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
               <i class="fa-solid fa-id-card"></i>
             </span>
-            <input type="text" id="login-student-id" required placeholder="예: 10101 또는 teacher" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+            <input type="text" id="login-student-id" required placeholder="예: 10101" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리)</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리 이상)</label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
               <i class="fa-solid fa-key"></i>
@@ -156,25 +163,42 @@
           <span>로그인</span>
           <i class="fa-solid fa-arrow-right text-xs"></i>
         </button>
+      </form>
 
-        <!-- Quick Demo Profiles -->
-        <div class="pt-4 border-t border-slate-100">
-          <p class="text-xs text-slate-400 text-center mb-2">데모 빠른 채우기</p>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="fillDemo('10101', '1234')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-xs font-medium text-slate-600 rounded-lg transition text-center">
-              <i class="fa-solid fa-user-graduate mr-1"></i> 학생 데모
-            </button>
-            <button type="button" onclick="fillDemo('teacher', '9999')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-xs font-medium text-slate-600 rounded-lg transition text-center">
-              <i class="fa-solid fa-user-tie mr-1"></i> 교사 데모
-            </button>
-          </div>
+      <!-- REGISTER FORM (Hidden by default) -->
+      <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="p-8 space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">구분</label>
+          <select id="reg-role" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 font-semibold text-slate-700">
+            <option value="student">학생</option>
+            <option value="teacher">교사 (관리자)</option>
+          </select>
         </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">학번 / 아이디</label>
+          <input type="text" id="reg-student-id" required placeholder="예: 10101 또는 teacher" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">이름</label>
+          <input type="text" id="reg-name" required placeholder="예: 홍길동" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리 이상)</label>
+          <input type="password" id="reg-pin" maxlength="6" required placeholder="••••" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <button type="submit" id="btn-reg-submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition flex justify-center items-center gap-2 mt-2">
+          <span>회원가입 완료</span>
+          <i class="fa-solid fa-user-plus text-xs"></i>
+        </button>
       </form>
     </section>
 
     <!-- 2. STUDENT PORTAL VIEW -->
     <section id="view-student" class="hidden space-y-6">
-      <!-- Total Balance Banner -->
       <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 flex items-center justify-center text-9xl">
           <i class="fa-solid fa-wallet"></i>
@@ -191,9 +215,7 @@
         </div>
       </div>
 
-      <!-- Accounts & Services Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- My Accounts Column (2 Cols) -->
         <div class="lg:col-span-2 space-y-4">
           <div class="flex justify-between items-center">
             <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
@@ -204,11 +226,8 @@
             </button>
           </div>
 
-          <div id="student-accounts-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Dynamic Accounts Cards inserted here -->
-          </div>
+          <div id="student-accounts-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
 
-          <!-- Transaction History Table -->
           <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 mt-6">
             <h3 class="font-bold text-slate-800 text-md mb-4 flex items-center gap-2">
               <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> 최근 거래 내역
@@ -223,15 +242,12 @@
                     <th class="pb-3 font-semibold text-right">금액</th>
                   </tr>
                 </thead>
-                <tbody id="student-tx-history-tbody" class="divide-y divide-slate-50">
-                  <!-- Dynamic History Rows -->
-                </tbody>
+                <tbody id="student-tx-history-tbody" class="divide-y divide-slate-50"></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- Quick Transfer Side Card -->
         <div class="space-y-4">
           <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
             <h3 class="font-bold text-slate-800 text-md mb-4 flex items-center gap-2">
@@ -240,26 +256,20 @@
             <form id="student-transfer-form" onsubmit="handleStudentTransfer(event)" class="space-y-4">
               <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">출금 계좌</label>
-                <select id="transfer-from-acc" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
-                  <!-- Options generated dynamically -->
-                </select>
+                <select id="transfer-from-acc" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500"></select>
               </div>
-
               <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">입금 대상 계좌번호 (Acc_ID)</label>
                 <input type="text" id="transfer-to-acc" required placeholder="예: ACC-170000000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
               </div>
-
               <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">송금 금액 (원)</label>
                 <input type="number" id="transfer-amount" min="1" required placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
               </div>
-
               <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">적요 / 메모</label>
                 <input type="text" id="transfer-desc" placeholder="예: 용돈 이체" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
               </div>
-
               <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
                 송금 실행
               </button>
@@ -287,7 +297,6 @@
         </div>
       </div>
 
-      <!-- Teacher Navigation Tabs -->
       <div class="flex border-b border-slate-200 gap-4 text-sm font-semibold">
         <button id="tab-btn-pending" onclick="switchTeacherTab('pending')" class="pb-3 border-b-2 border-blue-600 text-blue-600 transition">
           <i class="fa-solid fa-clipboard-check mr-1"></i> 상품 신청 승인 관리
@@ -300,7 +309,6 @@
         </button>
       </div>
 
-      <!-- Tab Content 1: Pending Approvals -->
       <div id="teacher-tab-pending" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
         <div class="flex justify-between items-center mb-4">
           <h3 class="font-bold text-slate-800 text-md">대기 중인 상품 신청 목록</h3>
@@ -319,14 +327,11 @@
                 <th class="pb-3 font-semibold text-center">상태 / 승인 조치</th>
               </tr>
             </thead>
-            <tbody id="teacher-pending-tbody" class="divide-y divide-slate-50">
-              <!-- Inserted dynamically -->
-            </tbody>
+            <tbody id="teacher-pending-tbody" class="divide-y divide-slate-50"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Tab Content 2: Teacher Deposit -->
       <div id="teacher-tab-deposit" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 max-w-lg">
         <h3 class="font-bold text-slate-800 text-md mb-4">학생 직권 지원금/상금 지급</h3>
         <form id="teacher-deposit-form" onsubmit="handleTeacherDepositSubmit(event)" class="space-y-4">
@@ -348,7 +353,6 @@
         </form>
       </div>
 
-      <!-- Tab Content 3: Kiosk Admin Item Registration -->
       <div id="teacher-tab-kiosk-admin" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 max-w-lg">
         <h3 class="font-bold text-slate-800 text-md mb-4">키오스크 매점 신규 상품 등록</h3>
         <form id="teacher-kiosk-item-form" onsubmit="handleAddKioskItemSubmit(event)" class="space-y-4">
@@ -371,7 +375,6 @@
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">이미지 URL 또는 FontAwesome 아이콘 클래스</label>
             <input type="text" id="kiosk-reg-image" placeholder="http://... 또는 fa-solid fa-cookie" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
-            <p class="text-[10px] text-slate-400 mt-1">http 로 시작하면 이미지, 아니면 FontAwesome 아이콘으로 자동 변환됩니다.</p>
           </div>
           <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow transition">
             매점 상품 등록하기
@@ -384,7 +387,6 @@
 
   <!-- 4. KIOSK FULLSCREEN MODAL VIEW -->
   <div id="modal-kiosk" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 hidden flex flex-col">
-    <!-- Kiosk Top Header -->
     <div class="bg-emerald-800 text-white px-6 py-4 flex justify-between items-center shadow-lg">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-xl shadow">
@@ -400,22 +402,12 @@
       </button>
     </div>
 
-    <!-- Kiosk Body: Stores Tabs + Items Grid + Cart Sidebar -->
     <div class="flex-grow flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
-      <!-- Left: Store Tabs & Catalog -->
       <div class="flex-grow flex flex-col min-w-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-        <!-- Store Name Dynamic Tabs -->
-        <div id="kiosk-store-tabs" class="flex border-b border-slate-100 overflow-x-auto p-2 bg-slate-50 gap-2">
-          <!-- Rendered dynamically -->
-        </div>
-
-        <!-- Items Grid Container -->
-        <div id="kiosk-items-grid" class="flex-grow p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <!-- Rendered dynamically -->
-        </div>
+        <div id="kiosk-store-tabs" class="flex border-b border-slate-100 overflow-x-auto p-2 bg-slate-50 gap-2"></div>
+        <div id="kiosk-items-grid" class="flex-grow p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
       </div>
 
-      <!-- Right: Cart Sidebar -->
       <div class="w-full md:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
         <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
           <h3 class="font-bold text-md flex items-center gap-2">
@@ -423,13 +415,7 @@
           </h3>
           <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-white transition">전체 삭제</button>
         </div>
-
-        <!-- Cart Items List -->
-        <div id="kiosk-cart-items" class="flex-grow p-4 overflow-y-auto divide-y divide-slate-100 space-y-2">
-          <!-- Rendered dynamically -->
-        </div>
-
-        <!-- Cart Footer & Total -->
+        <div id="kiosk-cart-items" class="flex-grow p-4 overflow-y-auto divide-y divide-slate-100 space-y-2"></div>
         <div class="p-5 bg-slate-50 border-t border-slate-200 space-y-4">
           <div class="flex justify-between items-center">
             <span class="text-xs font-medium text-slate-500">총 결제 금액</span>
@@ -444,11 +430,9 @@
     </div>
   </div>
 
-  <!-- 5. ATM FULLSCREEN TERMINAL VIEW (★ CORE REQUIREMENT ★) -->
+  <!-- 5. ATM FULLSCREEN TERMINAL VIEW -->
   <div id="modal-atm" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-2 sm:p-6">
     <div class="w-full max-w-4xl bg-slate-900 border-4 border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[800px] text-slate-100 atm-screen-glow relative">
-      
-      <!-- ATM Terminal Header Bar -->
       <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 px-6 py-4 border-b border-blue-800/50 flex justify-between items-center">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-blue-600/30 rounded-xl border border-blue-400/30 flex items-center justify-center text-blue-400 text-xl font-black">
@@ -464,12 +448,8 @@
         </button>
       </div>
 
-      <!-- ATM Dynamic Screen Body -->
-      <div id="atm-screen-content" class="flex-grow p-6 md:p-10 flex flex-col justify-between overflow-y-auto">
-        <!-- Default ATM Main Menu inserted here -->
-      </div>
+      <div id="atm-screen-content" class="flex-grow p-6 md:p-10 flex flex-col justify-between overflow-y-auto"></div>
 
-      <!-- ATM Bottom Machine Footer -->
       <div class="bg-slate-950 px-6 py-3 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -488,14 +468,11 @@
         <button onclick="closeApplyProductModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <p class="text-xs text-slate-500 mb-4">원하시는 금융 상품(적금/예금 등)을 선택하세요. 담임 교사 승인 후 계좌가 개설됩니다.</p>
-      
-      <div id="apply-products-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-        <!-- Inserted dynamically -->
-      </div>
+      <div id="apply-products-list" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
     </div>
   </div>
 
-  <!-- MODAL: Voice Phishing Prevention Warning Modal (★ ATM CORE REQUIRED ★) -->
+  <!-- MODAL: Voice Phishing Prevention Warning Modal -->
   <div id="modal-voice-phishing" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-center space-y-6">
       <div class="w-20 h-20 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-full mx-auto flex items-center justify-center text-4xl shadow-inner">
@@ -532,12 +509,9 @@
         <p id="nfc-modal-desc" class="text-xs text-slate-500 mt-1">NFC 리더기에 학생증을 태그하세요</p>
       </div>
 
-      <!-- Simulated Student ID Selection for testing -->
       <div class="space-y-2 text-left pt-2 border-t border-slate-100">
-        <label class="block text-[11px] font-semibold text-slate-500">테스트용 학생 선택 (태그 대용)</label>
-        <select id="nfc-simulated-student-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-          <!-- Inserted dynamically -->
-        </select>
+        <label class="block text-[11px] font-semibold text-slate-500">학생 선택 (태그 대용)</label>
+        <select id="nfc-simulated-student-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></select>
       </div>
 
       <div class="flex gap-2">
@@ -552,29 +526,20 @@
   </div>
 
   <script>
-    /* ==========================================================================
-       GLOBAL STATE
-       ========================================================================== */
-    let currentUser = null; // { student_id, name, role }
+    /* GLOBAL STATE */
+    let currentUser = null;
     let globalAccounts = [];
     let globalProducts = [];
     let globalKioskItems = [];
     let globalPending = [];
     let globalUsers = [];
 
-    // Kiosk Cart State
     let cart = [];
     let currentStoreFilter = "ALL";
+    let atmPendingTransferData = null;
+    let nfcCallback = null;
 
-    // ATM State
-    let atmPendingTransferData = null; // { fromAcc, toAcc, amount, desc }
-    let nfcCallback = null; // Callback for NFC completion
-
-    /* ==========================================================================
-       INITIALIZATION & ROUTING
-       ========================================================================== */
     window.addEventListener('DOMContentLoaded', () => {
-      // Check stored session
       const savedUser = localStorage.getItem("class_economy_user");
       if (savedUser) {
         try {
@@ -589,9 +554,7 @@
       }
     });
 
-    /* ==========================================================================
-       API UTILITIES
-       ========================================================================== */
+    /* API UTILITIES */
     async function apiGet(action, params = {}) {
       try {
         const queryParams = new URLSearchParams({ action, ...params });
@@ -623,9 +586,7 @@
       }
     }
 
-    /* ==========================================================================
-       UI HELPERS & TOASTS
-       ========================================================================== */
+    /* UI HELPERS */
     function showToast(msg, type = "info") {
       const container = document.getElementById("toast-container");
       const toast = document.createElement("div");
@@ -658,14 +619,27 @@
       document.getElementById(viewId).classList.remove("hidden");
     }
 
-    function fillDemo(id, pin) {
-      document.getElementById("login-student-id").value = id;
-      document.getElementById("login-pin").value = pin;
+    /* AUTH TABS (LOGIN / REGISTER) */
+    function switchAuthTab(type) {
+      const loginForm = document.getElementById("login-form");
+      const regForm = document.getElementById("register-form");
+      const tabLogin = document.getElementById("auth-tab-login");
+      const tabReg = document.getElementById("auth-tab-register");
+
+      if (type === 'login') {
+        loginForm.classList.remove("hidden");
+        regForm.classList.add("hidden");
+        tabLogin.className = "flex-1 py-3 text-blue-600 border-b-2 border-blue-600 transition font-bold";
+        tabReg.className = "flex-1 py-3 text-slate-400 hover:text-slate-600 transition";
+      } else {
+        loginForm.classList.add("hidden");
+        regForm.classList.remove("hidden");
+        tabLogin.className = "flex-1 py-3 text-slate-400 hover:text-slate-600 transition";
+        tabReg.className = "flex-1 py-3 text-emerald-600 border-b-2 border-emerald-600 transition font-bold";
+      }
     }
 
-    /* ==========================================================================
-       AUTHENTICATION & LOGIN
-       ========================================================================== */
+    /* LOGIN HANDLER */
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const student_id = document.getElementById("login-student-id").value.trim();
@@ -682,15 +656,40 @@
         showToast("반갑습니다! 로그인되었습니다.", "success");
         onLoginSuccess();
       } catch (err) {
-        // Error toast handled in apiPost
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>로그인</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
       }
     }
 
+    /* REGISTER HANDLER */
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const role = document.getElementById("reg-role").value;
+      const student_id = document.getElementById("reg-student-id").value.trim();
+      const name = document.getElementById("reg-name").value.trim();
+      const pin = document.getElementById("reg-pin").value.trim();
+      const btn = document.getElementById("btn-reg-submit");
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 가입 처리 중...`;
+
+      try {
+        await apiPost("register", { student_id, name, pin, role });
+        showToast("회원가입이 완료되었습니다! 생성한 학번과 PIN으로 로그인해주세요.", "success");
+        document.getElementById("register-form").reset();
+        
+        // 로그인 아이디 채워주고 로그인 탭으로 전환
+        document.getElementById("login-student-id").value = student_id;
+        switchAuthTab('login');
+      } catch (err) {
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>회원가입 완료</span><i class="fa-solid fa-user-plus text-xs"></i>`;
+      }
+    }
+
     function onLoginSuccess() {
-      // Header Info
       document.getElementById("header-user-info").classList.remove("hidden");
       document.getElementById("user-display-name").innerText = `${currentUser.name} 님`;
       document.getElementById("user-display-role").innerText = currentUser.role === "teacher" ? "교사 관리자" : `학번: ${currentUser.student_id}`;
@@ -716,14 +715,10 @@
       if (currentUser) onLoginSuccess();
     }
 
-    /* ==========================================================================
-       STUDENT DASHBOARD
-       ========================================================================== */
+    /* STUDENT DASHBOARD */
     async function loadStudentDashboard() {
       if (!currentUser) return;
-      
       try {
-        // Load Accounts & TxHistory in parallel
         const [accs, txs] = await Promise.all([
           apiGet("Accounts", { student_id: currentUser.student_id }),
           apiGet("TxHistory", { student_id: currentUser.student_id })
@@ -760,7 +755,6 @@
         const bal = Number(acc.Balance || 0);
         total += bal;
 
-        // Account Card UI
         const card = document.createElement("div");
         card.className = "bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden";
         card.innerHTML = `
@@ -776,7 +770,6 @@
         `;
         container.appendChild(card);
 
-        // Select Options
         const opt = document.createElement("option");
         opt.value = acc.Acc_ID;
         opt.innerText = `${acc.Acc_Name} (${bal.toLocaleString()}원)`;
@@ -795,7 +788,6 @@
         return;
       }
 
-      // Sort newest first
       const sorted = [...txs].reverse();
 
       sorted.forEach(tx => {
@@ -828,13 +820,10 @@
         document.getElementById("student-transfer-form").reset();
         loadStudentDashboard();
       } catch (err) {
-        // Handled in apiPost
       }
     }
 
-    /* ==========================================================================
-       PRODUCT APPLICATION MODAL
-       ========================================================================== */
+    /* PRODUCT APPLICATION MODAL */
     async function openApplyProductModal() {
       const modal = document.getElementById("modal-apply-prod");
       const container = document.getElementById("apply-products-list");
@@ -881,13 +870,10 @@
         showToast("상품 신청이 접수되었습니다. 담임 교사 승인 후 개설됩니다.", "success");
         closeApplyProductModal();
       } catch (err) {
-        // Handled in apiPost
       }
     }
 
-    /* ==========================================================================
-       TEACHER DASHBOARD
-       ========================================================================== */
+    /* TEACHER DASHBOARD */
     function switchTeacherTab(tabKey) {
       document.getElementById("teacher-tab-pending").classList.add("hidden");
       document.getElementById("teacher-tab-deposit").classList.add("hidden");
@@ -906,7 +892,7 @@
         document.getElementById("tab-btn-deposit").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold";
       } else if (tabKey === 'kiosk-admin') {
         document.getElementById("teacher-tab-kiosk-admin").classList.remove("hidden");
-        document.getElementById("tab-btn-kiosk-admin").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold font-bold";
+        document.getElementById("tab-btn-kiosk-admin").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold";
       }
     }
 
@@ -957,7 +943,6 @@
         showToast(`신청이 ${action_status === 'APPROVED' ? '승인' : '거절'} 되었습니다.`, "success");
         loadPendingApplications();
       } catch (err) {
-        // Handled in apiPost
       }
     }
 
@@ -972,7 +957,6 @@
         showToast("지급금이 정상적으로 입금되었습니다.", "success");
         document.getElementById("teacher-deposit-form").reset();
       } catch (err) {
-        // Handled in apiPost
       }
     }
 
@@ -989,13 +973,10 @@
         showToast("매점 상품이 성공적으로 추가되었습니다.", "success");
         document.getElementById("teacher-kiosk-item-form").reset();
       } catch (err) {
-        // Handled in apiPost
       }
     }
 
-    /* ==========================================================================
-       KIOSK MODE & NFC PAYMENT
-       ========================================================================== */
+    /* KIOSK MODE & NFC PAYMENT */
     async function launchKioskMode() {
       const modal = document.getElementById("modal-kiosk");
       modal.classList.remove("hidden");
@@ -1019,7 +1000,6 @@
       const tabsContainer = document.getElementById("kiosk-store-tabs");
       tabsContainer.innerHTML = "";
 
-      // Extract unique store names
       const stores = ["ALL", ...new Set(globalKioskItems.map(item => item.Store_Name).filter(Boolean))];
 
       stores.forEach(store => {
@@ -1153,9 +1133,7 @@
         "키오스크 NFC 결제",
         `총 ${total.toLocaleString()}원 결제 - 학생증을 태그하세요`,
         async (simulatedStudentId) => {
-          // Execute payment via transfer or ATM withdrawal logic
           try {
-            // Find student checking account
             const accs = await apiGet("Accounts", { student_id: simulatedStudentId });
             const checking = accs.find(a => a.Acc_Type === "CHECKING") || accs[0];
 
@@ -1174,15 +1152,12 @@
             showToast("결제가 완료되었습니다! 이용해 주셔서 감사합니다.", "success");
             clearCart();
           } catch (err) {
-            // Handled
           }
         }
       );
     }
 
-    /* ==========================================================================
-       ATM MODE (★ CORE REQUIREMENT ★)
-       ========================================================================== */
+    /* ATM MODE */
     async function launchAtmMode() {
       const modal = document.getElementById("modal-atm");
       modal.classList.remove("hidden");
@@ -1230,7 +1205,6 @@
       `;
     }
 
-    // ATM 1: Inquiry
     function atmStepInquiry() {
       triggerNfcModal("ATM 예금 조회", "학생증을 태그하여 잔액을 조회합니다", async (studentId) => {
         try {
@@ -1260,7 +1234,6 @@
       });
     }
 
-    // ATM 2: Deposit
     function atmStepDeposit() {
       const container = document.getElementById("atm-screen-content");
       container.innerHTML = `
@@ -1300,7 +1273,6 @@
       });
     }
 
-    // ATM 3: Withdrawal
     function atmStepWithdrawal() {
       const container = document.getElementById("atm-screen-content");
       container.innerHTML = `
@@ -1340,7 +1312,6 @@
       });
     }
 
-    // ATM 4: Transfer (★ WITH VOICE PHISHING WARNING MODAL ★)
     function atmStepTransferInit() {
       const container = document.getElementById("atm-screen-content");
       container.innerHTML = `
@@ -1377,8 +1348,6 @@
       }
 
       atmPendingTransferData = { acc_id, target_acc_id, amount };
-      
-      // SHOW VOICE PHISHING MODAL FIRST!
       document.getElementById("modal-voice-phishing").classList.remove("hidden");
     }
 
@@ -1386,7 +1355,6 @@
       document.getElementById("modal-voice-phishing").classList.add("hidden");
 
       if (confirmed && atmPendingTransferData) {
-        // Proceed to NFC Tag step
         triggerNfcModal("ATM 계좌 이체 최종 승인", "학생증을 태그하여 이체를 확정합니다", async (studentId) => {
           try {
             await apiPost("atmTransaction", {
@@ -1407,15 +1375,12 @@
       }
     }
 
-    /* ==========================================================================
-       NFC POPUP SIMULATOR
-       ========================================================================== */
+    /* NFC POPUP SIMULATOR */
     async function triggerNfcModal(title, desc, callback) {
       document.getElementById("nfc-modal-title").innerText = title;
       document.getElementById("nfc-modal-desc").innerText = desc;
       nfcCallback = callback;
 
-      // Load student list into select dropdown
       const select = document.getElementById("nfc-simulated-student-id");
       select.innerHTML = `<option value="">불러오는 중...</option>`;
 
@@ -1433,7 +1398,6 @@
           select.appendChild(opt);
         });
 
-        // Pre-select current logged-in student if applicable
         if (currentUser && currentUser.student_id) {
           select.value = currentUser.student_id;
         }
