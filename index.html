@@ -433,11 +433,11 @@ async function doLogin(){
 function routeByRole(){
   const role = String(state.user.Role||"").toLowerCase();
   if(role === "teacher" || role === "student"){
-    document.getElementById("tch-name").textContent = state.user.Name + " 선생님";
+    document.getElementById("tch-name").textContent = state.user.Name + "선생님";
     showScreen("screen-teacher");
     loadTeacherData();
   } else {
-    document.getElementById("stu-name").textContent = state.user.Name + " 학생";
+    document.getElementById("stu-name").textContent = state.user.Name + "학생";
     showScreen("screen-student");
     loadStudentData();
   }
