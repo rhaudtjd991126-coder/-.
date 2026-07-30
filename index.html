@@ -1432,14 +1432,25 @@ async function confirmNfcTag() {
        ========================================================================== */
     // 1. 교사 계정이 아니면 ATM/키오스크 메뉴 숨기기 함수
     function checkUserRole(user) {
-      if (user && user.role !== 'teacher') {
-        const kioskBtn = document.getElementById('kioskMenuBtn');
-        const atmBtn = document.getElementById('atmMenuBtn');
-        
-        if (kioskBtn) kioskBtn.style.display = 'none';
-        if (atmBtn) atmBtn.style.display = 'none';
-      }
+  // 로그인한 사용자 역할을 콘솔에 출력 (F12에서 확인 가능)
+  console.log("현재 로그인 역할:", user ? user.role : "없음");
+
+  const teacherView = document.getElementById('view-teacher');
+
+  if (user && user.role !== 'teacher') {
+    // 1. 학생 계정일 경우: 교사 관리자 포털 섹션 전체를 강제로 숨깁니다!
+    if (teacherView) {
+      teacherView.classList.add('hidden'); // Tailwind CSS의 hidden 클래스 추가
+      teacherView.style.display = 'none';  // 혹시 몰라 inline 스타일로도 숨김
     }
+  } else if (user && user.role === 'teacher') {
+    // 2. 교사 계정일 경우: 교사 포털을 보여줍니다.
+    if (teacherView) {
+      teacherView.classList.remove('hidden');
+      teacherView.style.display = 'block';
+    }
+  }
+}
 
     // 2. ATM/이체 시 보이스피싱 팝업 띄우기
     let nextStepFunction = null;
