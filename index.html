@@ -1,909 +1,1466 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>학급 은행 & 키오스크</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학급 경제 시스템 Portal & Kiosk & ATM</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter & Noto Sans KR -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            bank: {
+              navy: '#0f172a',
+              blue: '#1e3a8a',
+              accent: '#2563eb',
+              gold: '#f59e0b',
+              emerald: '#059669',
+              dark: '#020617'
+            }
+          }
+        }
+      }
+    }
+  </script>
 
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f1f5f9;
+      user-select: none;
+    }
+    
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
 
-<style>
-  :root { --brand:#2563eb; }
-  * { -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Segoe UI', 'Pretendard', -apple-system, sans-serif; }
+    /* Pulsing animations for NFC/ATM */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .animate-nfc-pulse {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
 
-  /* 화면 전환 */
-  .screen { display:none; }
-  .screen.active { display:block; }
-
-  /* NFC 카드 태그 애니메이션 */
-  @keyframes nfcpulse {
-    0%   { transform: scale(1);   opacity:.9; }
-    70%  { transform: scale(1.35);opacity:0;  }
-    100% { transform: scale(1.35);opacity:0;  }
-  }
-  .nfc-ring { animation: nfcpulse 1.6s infinite ease-out; }
-  @keyframes cardfloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-  .card-float { animation: cardfloat 2s infinite ease-in-out; }
-
-  /* ATM 버튼 프레스 효과 */
-  .atm-btn:active { transform: scale(.97); }
-  .fade-in { animation: fadein .25s ease; }
-  @keyframes fadein { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
-
-  /* 스크롤바 */
-  ::-webkit-scrollbar { width:8px; height:8px; }
-  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:8px; }
-</style>
+    /* ATM Display Glow Effects */
+    .atm-screen-glow {
+      box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.15);
+    }
+  </style>
 </head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between">
 
-<body class="bg-slate-100 text-slate-800">
+  <script>
+    // Google Apps Script 배포 웹앱 URL (필요시 아래 URL을 교체하세요)
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_SAMPLE_DEPLOYMENT_ID/exec";
+  </script>
 
-<!-- ======================================================= -->
-<!-- 1. 로그인 화면                                            -->
-<!-- ======================================================= -->
-<section id="screen-login" class="screen active min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-blue-600 text-white text-3xl shadow-lg mb-4">
-        <i class="fa-solid fa-building-columns"></i>
-      </div>
-      <h1 id="app-title" class="text-3xl font-extrabold text-slate-800">우리반 은행</h1>
-      <p class="text-slate-500 mt-1">Class Bank &amp; Kiosk System</p>
-    </div>
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-    <div class="bg-white rounded-3xl shadow-xl p-7">
-      <h2 class="text-lg font-bold mb-5 flex items-center gap-2">
-        <i class="fa-solid fa-right-to-bracket text-blue-600"></i> 로그인
-      </h2>
-
-      <label class="block text-sm font-semibold text-slate-600 mb-1">이름</label>
-      <div class="relative mb-4">
-        <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input id="login-name" type="text" placeholder="이름을 입력하세요"
-               class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" />
-      </div>
-
-      <label class="block text-sm font-semibold text-slate-600 mb-1">PIN 번호</label>
-      <div class="relative mb-6">
-        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input id="login-pin" type="password" inputmode="numeric" placeholder="숫자 PIN"
-               class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none tracking-widest" />
-      </div>
-
-      <button onclick="doLogin()" id="login-btn" type="button"
-        class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg transition flex items-center justify-center gap-2">
-        <i class="fa-solid fa-arrow-right-to-bracket"></i> 로그인
-      </button>
-
-      <button onclick="openRegister()" class="w-full mt-3 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold transition">
-        <i class="fa-solid fa-user-plus mr-1"></i> 신규 계좌 개설(회원가입)
-      </button>
-    </div>
-    <p class="text-center text-xs text-slate-400 mt-6">© Class Bank · Powered by Google Apps Script</p>
-  </div>
-</section>
-
-<!-- ======================================================= -->
-<!-- 2. 학생 메인 화면                                         -->
-<!-- ======================================================= -->
-<section id="screen-student" class="screen min-h-screen">
-  <header class="bg-blue-600 text-white sticky top-0 z-20 shadow">
-    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div>
-        <p class="text-blue-100 text-xs">환영합니다</p>
-        <p class="font-bold text-lg" id="stu-name">학생</p>
-      </div>
-      <button onclick="logout()" class="text-sm bg-blue-500/60 hover:bg-blue-500 px-3 py-2 rounded-lg">
-        <i class="fa-solid fa-right-from-bracket mr-1"></i>로그아웃
-      </button>
-    </div>
-  </header>
-
-  <main class="max-w-3xl mx-auto p-4 space-y-5 pb-24">
-    <!-- 계좌 카드 -->
-    <div id="stu-accounts" class="space-y-4"></div>
-
-    <!-- 기능 버튼 -->
-    <div class="grid grid-cols-3 gap-3">
-      <button onclick="openTransfer()" class="bg-white rounded-2xl p-4 shadow hover:shadow-md transition text-center">
-        <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-2"><i class="fa-solid fa-paper-plane"></i></div>
-        <span class="text-sm font-semibold">계좌이체</span>
-      </button>
-      <button onclick="openProducts()" class="bg-white rounded-2xl p-4 shadow hover:shadow-md transition text-center">
-        <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-2"><i class="fa-solid fa-piggy-bank"></i></div>
-        <span class="text-sm font-semibold">금융상품</span>
-      </button>
-      <button onclick="loadStudentData()" class="bg-white rounded-2xl p-4 shadow hover:shadow-md transition text-center">
-        <div class="w-12 h-12 mx-auto rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl mb-2"><i class="fa-solid fa-rotate"></i></div>
-        <span class="text-sm font-semibold">새로고침</span>
-      </button>
-    </div>
-
-    <!-- 거래내역 -->
-    <div class="bg-white rounded-2xl shadow p-5">
-      <h3 class="font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-receipt text-slate-500"></i> 최근 거래내역</h3>
-      <div id="stu-tx" class="divide-y divide-slate-100"></div>
-    </div>
-  </main>
-</section>
-
-<!-- ======================================================= -->
-<!-- 3. 교사 제어 센터                                         -->
-<!-- ======================================================= -->
-<section id="screen-teacher" class="screen min-h-screen">
-  <header class="bg-slate-900 text-white sticky top-0 z-20 shadow">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <i class="fa-solid fa-user-shield text-2xl text-amber-400"></i>
-        <div>
-          <p class="text-slate-300 text-xs">교사 제어 센터</p>
-          <p class="font-bold text-lg" id="tch-name">선생님</p>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <button onclick="launchKiosk()" class="text-sm bg-emerald-500 hover:bg-emerald-600 px-3 py-2 rounded-lg font-semibold"><i class="fa-solid fa-cash-register mr-1"></i>키오스크 모드</button>
-        <button onclick="launchATM()" class="text-sm bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg font-semibold"><i class="fa-solid fa-building-columns mr-1"></i>ATM 모드</button>
-        <button onclick="logout()" class="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg"><i class="fa-solid fa-right-from-bracket"></i></button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-5xl mx-auto p-4 grid md:grid-cols-2 gap-5 pb-24">
-    <!-- 승인 대기 -->
-    <div class="bg-white rounded-2xl shadow p-5 md:col-span-2">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-amber-500"></i> 가입/상품 신청 승인</h3>
-        <button onclick="loadTeacherData()" class="text-xs text-blue-600 hover:underline"><i class="fa-solid fa-rotate mr-1"></i>새로고침</button>
-      </div>
-      <div id="tch-pending" class="space-y-2"></div>
-    </div>
-
-    <!-- 직권 입출금 -->
-    <div class="bg-white rounded-2xl shadow p-5">
-      <h3 class="font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-coins text-emerald-500"></i> 계좌 직권 입출금 (포인트)</h3>
-      <label class="text-sm font-semibold text-slate-600">학생 학번</label>
-      <input id="dep-sid" list="student-list" class="w-full mb-3 mt-1 px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="학번 선택/입력" />
-      <datalist id="student-list"></datalist>
-
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label class="text-sm font-semibold text-slate-600">구분</label>
-          <select id="dep-type" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 outline-none">
-            <option value="deposit">입금(지급)</option>
-            <option value="withdraw">출금(차감)</option>
-          </select>
+  <!-- Top Navigation Header -->
+  <header id="main-header" class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="navigateHome()">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-[#]"></i>
+          <i class="fa-solid fa-piggy-bank"></i>
         </div>
         <div>
-          <label class="text-sm font-semibold text-slate-600">금액</label>
-          <input id="dep-amt" type="number" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="0" />
+          <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+            학급 경제 포털 <span class="text-xs bg-blue-500/30 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-normal">v2.5</span>
+          </h1>
+          <p class="text-xs text-slate-400">스마트 학급 금융 & 매점 & ATM 시스템</p>
         </div>
       </div>
-      <input id="dep-desc" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="사유 (예: 칭찬 포인트)" />
-      <button onclick="teacherAdjust()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">처리하기</button>
-    </div>
 
-    <!-- 키오스크 상품 추가 -->
-    <div class="bg-white rounded-2xl shadow p-5">
-      <h3 class="font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-plus text-blue-500"></i> 키오스크 매장/메뉴 추가</h3>
-      <div class="grid grid-cols-2 gap-3">
-        <input id="k-store" class="px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="매장명" />
-        <input id="k-cat"   class="px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="카테고리" />
-      </div>
-      <input id="k-item" class="w-full mt-3 px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="메뉴명" />
-      <div class="grid grid-cols-2 gap-3 mt-3">
-        <input id="k-price" type="number" class="px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="가격" />
-        <input id="k-img"   class="px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="Imgur URL 또는 fa-아이콘" />
-      </div>
-      <button onclick="addKioskItem()" class="w-full mt-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold">메뉴 등록</button>
-      <p class="text-xs text-slate-400 mt-2">이미지 URL은 http(s)로 시작하면 사진, 아니면 아이콘(fa-...)으로 표시됩니다.</p>
-    </div>
-  </main>
-</section>
-
-<!-- ======================================================= -->
-<!-- 4. 키오스크 모드                                          -->
-<!-- ======================================================= -->
-<section id="screen-kiosk" class="screen min-h-screen bg-slate-50">
-  <header class="bg-white border-b sticky top-0 z-20">
-    <div class="px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2 font-extrabold text-lg text-slate-800"><i class="fa-solid fa-cash-register text-emerald-500"></i> 학급 키오스크</div>
-      <button onclick="exitMode()" class="text-sm bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-xmark mr-1"></i>종료</button>
-    </div>
-    <!-- 매장 탭 -->
-    <div id="kiosk-tabs" class="flex gap-2 overflow-x-auto px-4 pb-3"></div>
-  </header>
-
-  <div class="grid lg:grid-cols-3 gap-0 min-h-[calc(100vh-120px)]">
-    <!-- 메뉴 그리드 -->
-    <div class="lg:col-span-2 p-4">
-      <div id="kiosk-menu" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-    </div>
-
-    <!-- 장바구니 -->
-    <aside class="bg-white border-l p-4 flex flex-col">
-      <h3 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-emerald-500"></i> 장바구니</h3>
-      <div id="kiosk-cart" class="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-[200px]"></div>
-      <div class="border-t pt-4 mt-3">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-slate-500">합계</span>
-          <span id="kiosk-total" class="text-2xl font-extrabold text-emerald-600">₩0</span>
+      <!-- Header Action Buttons -->
+      <div id="header-user-info" class="flex items-center gap-3 hidden">
+        <div class="text-right hidden sm:block">
+          <p id="user-display-name" class="text-sm font-semibold text-white"></p>
+          <p id="user-display-role" class="text-xs text-slate-400"></p>
         </div>
-        <button onclick="kioskCheckout()" class="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold">
-          <i class="fa-solid fa-credit-card mr-2"></i> 결제하기
+        <button onclick="launchAtmMode()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-vault"></i> <span class="hidden md:inline">학급 ATM</span>
+        </button>
+        <button onclick="launchKioskMode()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-store"></i> <span class="hidden md:inline">키오스크</span>
+        </button>
+        <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium px-3 py-2 rounded-lg transition border border-slate-700">
+          <i class="fa-solid fa-right-from-bracket"></i>
         </button>
       </div>
-    </aside>
-  </div>
-</section>
-
-<!-- ======================================================= -->
-<!-- 5. 학급 ATM 모드                                          -->
-<!-- ======================================================= -->
-<section id="screen-atm" class="screen min-h-screen bg-gradient-to-b from-blue-900 to-slate-900 text-white">
-  <header class="px-5 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <i class="fa-solid fa-building-columns text-2xl text-blue-300"></i>
-      <div>
-        <p class="font-extrabold text-xl">우리반 ATM</p>
-        <p class="text-blue-200 text-xs" id="atm-holder">카드 소유자: -</p>
-      </div>
     </div>
-    <button onclick="exitMode()" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg"><i class="fa-solid fa-xmark mr-1"></i>종료</button>
   </header>
-  <div id="atm-body" class="max-w-2xl mx-auto p-4"></div>
-</section>
 
-<!-- ======================================================= -->
-<!-- 공통 모달 : NFC 태그                                      -->
-<!-- ======================================================= -->
-<div id="modal-nfc" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-  <div class="bg-white rounded-3xl p-8 w-full max-w-sm text-center fade-in">
-    <p class="text-slate-500 mb-1" id="nfc-title">결제 진행</p>
-    <h3 class="text-xl font-extrabold mb-6" id="nfc-amount">카드를 태그해 주세요</h3>
-    <div class="relative w-40 h-40 mx-auto mb-6 flex items-center justify-center">
-      <span class="absolute inset-0 rounded-full bg-blue-200 nfc-ring"></span>
-      <span class="absolute inset-4 rounded-full bg-blue-100 nfc-ring" style="animation-delay:.4s"></span>
-      <div class="relative w-24 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg flex items-center justify-center card-float">
-        <i class="fa-solid fa-wifi text-white text-2xl rotate-90"></i>
+  <!-- Main Dynamic View Container -->
+  <main id="app-container" class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+    
+    <!-- 1. LOGIN VIEW -->
+    <section id="view-login" class="max-w-md mx-auto my-12 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+      <div class="bg-gradient-to-br from-blue-900 to-indigo-900 p-8 text-white text-center relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl"></div>
+        <div class="w-16 h-16 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
+          <i class="fa-solid fa-building-columns text-blue-300"></i>
+        </div>
+        <h2 class="text-2xl font-bold">학급 금융 로그인</h2>
+        <p class="text-xs text-blue-200 mt-1">학번 및 PIN 번호를 입력하여 접속하세요</p>
       </div>
-    </div>
-    <p class="text-slate-400 text-sm mb-6"><i class="fa-solid fa-id-card mr-1"></i> NFC 카드를 리더기에 대주세요</p>
-    <button onclick="nfcConfirm()" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold mb-2">
-      <i class="fa-solid fa-hand-pointer mr-1"></i> 카드 태그 (터치)
-    </button>
-    <button onclick="closeNFC()" class="w-full py-3 text-slate-400 font-semibold">취소</button>
-  </div>
-</div>
 
-<!-- 공통 모달 : 보이스피싱 경고 -->
-<div id="modal-phishing" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-  <div class="bg-white rounded-3xl p-8 w-full max-w-sm text-center fade-in border-t-8 border-red-500">
-    <div class="w-16 h-16 mx-auto rounded-full bg-red-100 text-red-500 flex items-center justify-center text-3xl mb-4">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-    </div>
-    <h3 class="text-xl font-extrabold text-red-600 mb-3">보이스피싱 주의!</h3>
-    <p class="text-slate-600 text-sm leading-relaxed mb-6">
-      혹시 <b>누군가의 지시</b>로 이체하고 있나요?<br>
-      경찰·검찰·은행은 절대 <b>계좌이체</b>를 요구하지 않습니다.<br>
-      모르는 사람에게 송금하는 것이라면 <b>지금 멈추세요.</b>
-    </p>
-    <button onclick="phishingConfirm()" class="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold mb-2">
-      확인했습니다. 계속 진행
-    </button>
-    <button onclick="closePhishing()" class="w-full py-3 text-slate-400 font-semibold">이체 취소</button>
-  </div>
-</div>
-
-<!-- 공통 모달 : 상품/이체 입력 (범용 폼) -->
-<div id="modal-form" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/60 p-4">
-  <div class="bg-white rounded-3xl p-6 w-full max-w-md fade-in max-h-[90vh] overflow-y-auto">
-    <div class="flex items-center justify-between mb-4">
-      <h3 id="form-title" class="text-lg font-bold"></h3>
-      <button onclick="closeForm()" class="text-slate-400 text-xl"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="form-body"></div>
-  </div>
-</div>
-
-<!-- 토스트 -->
-<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] hidden">
-  <div id="toast-inner" class="px-5 py-3 rounded-xl shadow-lg text-white font-semibold"></div>
-</div>
-
-<script>
-/* ==========================================================
- *  ★ 배포 URL (여기만 본인 웹앱 URL로 교체) ★
- * ========================================================== */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhaiwjRAJ1vh5gwNMuHHagLLNnLUJ-pWurh4U7OPaeg76BX20ZmbLLGhl4HhbdpfoMfg/exec";
-
-/* ==========================================================
- *  전역 상태
- * ========================================================== */
-const state = {
-  user: null,          // {Student_ID, Name, Role}
-  accounts: [],
-  products: [],
-  kiosk: [],
-  pending: [],
-  users: [],
-  cart: [],            // 키오스크 장바구니
-  currentStore: null,
-  nfcCallback: null,   // NFC 완료 후 실행
-  phishingCallback: null
-};
-
-/* ==========================================================
- *  통신 헬퍼 (Google Apps Script fetch)
- *  - POST는 헤더 없이 보내 CORS preflight 회피 (text/plain)
- * ========================================================== */
-async function apiGet(action, params = {}) {
-  const url = new URL(APPS_SCRIPT_URL);
-  url.searchParams.set("action", action);
-  Object.keys(params).forEach(k => { if (params[k] !== undefined && params[k] !== null) url.searchParams.set(k, params[k]); });
-  const res = await fetch(url.toString(), { method: "GET" });
-  return res.json();
-}
-async function apiPost(action, payload = {}) {
-  payload.action = action;
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify(payload) // Content-Type 지정 X → simple request
-  });
-  return res.json();
-}
-
-/* ==========================================================
- *  UI 유틸
- * ========================================================== */
-function won(n){ return "₩" + (Number(n)||0).toLocaleString("ko-KR"); }
-
-function showScreen(id){
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  window.scrollTo(0,0);
-}
-function toast(msg, type="info"){
-  const box = document.getElementById("toast");
-  const inner = document.getElementById("toast-inner");
-  const colors = { info:"bg-slate-800", ok:"bg-emerald-600", err:"bg-red-600", warn:"bg-amber-500" };
-  inner.className = "px-5 py-3 rounded-xl shadow-lg text-white font-semibold " + (colors[type]||colors.info);
-  inner.textContent = msg;
-  box.classList.remove("hidden");
-  clearTimeout(window.__toast);
-  window.__toast = setTimeout(()=> box.classList.add("hidden"), 2600);
-}
-function loading(btn, on, text){
-  if(!btn) return;
-  if(on){ btn.dataset.old = btn.innerHTML; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> '+(text||"처리중..."); }
-  else { btn.disabled=false; btn.innerHTML = btn.dataset.old || btn.innerHTML; }
-}
-
-/* 범용 폼 모달 */
-function openForm(title, html){
-  document.getElementById("form-title").textContent = title;
-  document.getElementById("form-body").innerHTML = html;
-  const m = document.getElementById("modal-form"); m.classList.remove("hidden"); m.classList.add("flex");
-}
-function closeForm(){ const m=document.getElementById("modal-form"); m.classList.add("hidden"); m.classList.remove("flex"); }
-
-/* NFC 모달 */
-function openNFC(title, amountText, callback){
-  document.getElementById("nfc-title").textContent = title || "거래 진행";
-  document.getElementById("nfc-amount").textContent = amountText || "카드를 태그해 주세요";
-  state.nfcCallback = callback;
-  const m = document.getElementById("modal-nfc"); m.classList.remove("hidden"); m.classList.add("flex");
-}
-function closeNFC(){ const m=document.getElementById("modal-nfc"); m.classList.add("hidden"); m.classList.remove("flex"); state.nfcCallback=null; }
-function nfcConfirm(){
-  const cb = state.nfcCallback; closeNFC();
-  if(typeof cb === "function") cb();
-}
-
-/* 보이스피싱 모달 */
-function openPhishing(callback){
-  state.phishingCallback = callback;
-  const m=document.getElementById("modal-phishing"); m.classList.remove("hidden"); m.classList.add("flex");
-}
-function closePhishing(){ const m=document.getElementById("modal-phishing"); m.classList.add("hidden"); m.classList.remove("flex"); state.phishingCallback=null; }
-function phishingConfirm(){ const cb=state.phishingCallback; closePhishing(); if(typeof cb==="function") cb(); }
-
-/* ==========================================================
- *  로그인 / 로그아웃 / 회원가입
- * ========================================================== */
-async function doLogin(){
-  const name = document.getElementById("login-name").value.trim();
-  const pin  = document.getElementById("login-pin").value.trim();
-  if(!name || !pin){ toast("이름과 PIN을 입력하세요.","warn"); return; }
-  const btn = document.getElementById("login-btn");
-  loading(btn, true, "로그인 중...");
-  try{
-    const r = await apiPost("login", { name, pin });
-    if(r.status !== "success"){ toast(r.message || "로그인 실패","err"); return; }
-    state.user = r.data;
-    document.getElementById("login-pin").value = "";
-    routeByRole();
-  }catch(e){ toast("서버 연결 오류: "+e.message,"err"); }
-  finally{ loading(btn,false); }
-}
-
-function routeByRole(){
-  const role = String(state.user.Role||"").toLowerCase();
-  if(role === "teacher" || role === "student"){
-    document.getElementById("tch-name").textContent = state.user.Name + "선생님";
-    showScreen("screen-teacher");
-    loadTeacherData();
-  } else {
-    document.getElementById("stu-name").textContent = state.user.Name + "학생";
-    showScreen("screen-student");
-    loadStudentData();
-  }
-}
-function logout(){ state.user=null; state.cart=[]; showScreen("screen-login"); }
-
-function openRegister(){
-  openForm("신규 계좌 개설", `
-    <div class="space-y-3">
-      <input id="rg-sid" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="학번(고유 ID)" />
-      <input id="rg-name" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="이름" />
-      <input id="rg-pin" type="password" inputmode="numeric" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="PIN 번호" />
-      <select id="rg-role" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none">
-        <option value="student">학생</option>
-        <option value="teacher">교사</option>
-      </select>
-      <button onclick="doRegister(this)" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold">가입하기</button>
-    </div>`);
-}
-async function doRegister(btn){
-  const studentId = document.getElementById("rg-sid").value.trim();
-  const name = document.getElementById("rg-name").value.trim();
-  const pin  = document.getElementById("rg-pin").value.trim();
-  const role = document.getElementById("rg-role").value;
-  if(!studentId||!name||!pin){ toast("모든 항목을 입력하세요.","warn"); return; }
-  loading(btn,true);
-  try{
-    const r = await apiPost("register",{ studentId, name, pin, role });
-    if(r.status==="success"){ toast("가입 완료! 로그인해 주세요.","ok"); closeForm(); }
-    else toast(r.message||"가입 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-  finally{ loading(btn,false); }
-}
-
-/* ==========================================================
- *  학생 화면
- * ========================================================== */
-async function loadStudentData(){
-  try{
-    const [accR, txR] = await Promise.all([
-      apiGet("Accounts",{ studentId: state.user.Student_ID }),
-      apiGet("TxHistory",{ studentId: state.user.Student_ID })
-    ]);
-    state.accounts = accR.data || [];
-    renderStudentAccounts();
-    renderStudentTx(txR.data || []);
-  }catch(e){ toast("데이터 로드 오류: "+e.message,"err"); }
-}
-function renderStudentAccounts(){
-  const box = document.getElementById("stu-accounts");
-  if(!state.accounts.length){ box.innerHTML = `<div class="bg-white rounded-2xl p-6 text-center text-slate-400">계좌가 없습니다.</div>`; return; }
-  box.innerHTML = state.accounts.map(a => `
-    <div class="rounded-3xl p-6 bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg">
-      <div class="flex justify-between items-start">
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="p-8 space-y-5">
         <div>
-          <p class="text-blue-100 text-sm">${a.Acc_Name||"입출금통장"}</p>
-          <p class="text-blue-200 text-xs mt-1">${a.Acc_Type||""} · ${a.Status||""}</p>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">학번 / 아이디</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-id-card"></i>
+            </span>
+            <input type="text" id="login-student-id" required placeholder="예: 10101 또는 teacher" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+          </div>
         </div>
-        <i class="fa-solid fa-won-sign text-blue-300 text-xl"></i>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN 번호 (4자리)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-key"></i>
+            </span>
+            <input type="password" id="login-pin" maxlength="6" required placeholder="••••" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition flex justify-center items-center gap-2">
+          <span>로그인</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+
+        <!-- Quick Demo Profiles -->
+        <div class="pt-4 border-t border-slate-100">
+          <p class="text-xs text-slate-400 text-center mb-2">데모 빠른 채우기</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="fillDemo('10101', '1234')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-xs font-medium text-slate-600 rounded-lg transition text-center">
+              <i class="fa-solid fa-user-graduate mr-1"></i> 학생 데모
+            </button>
+            <button type="button" onclick="fillDemo('teacher', '9999')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-xs font-medium text-slate-600 rounded-lg transition text-center">
+              <i class="fa-solid fa-user-tie mr-1"></i> 교사 데모
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- 2. STUDENT PORTAL VIEW -->
+    <section id="view-student" class="hidden space-y-6">
+      <!-- Total Balance Banner -->
+      <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 flex items-center justify-center text-9xl">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-400/20 px-3 py-1 rounded-full">학생 포털</span>
+            <button onclick="refreshStudentData()" class="text-slate-300 hover:text-white text-xs flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg backdrop-blur-sm transition">
+              <i class="fa-solid fa-rotate-right"></i> 새로고침
+            </button>
+          </div>
+          <p class="text-sm text-slate-300">내 전체 총 자산</p>
+          <h2 id="student-total-balance" class="text-3xl md:text-4xl font-black text-white mt-1">0 원</h2>
+        </div>
       </div>
-      <p class="text-3xl font-extrabold mt-6">${won(a.Balance)}</p>
-      <p class="text-blue-200 text-xs mt-2">계좌번호 ${a.Acc_ID||""} · 예금주 ${a.StudentName||state.user.Name}</p>
-    </div>`).join("");
-}
-function renderStudentTx(list){
-  const box = document.getElementById("stu-tx");
-  if(!list.length){ box.innerHTML = `<p class="text-slate-400 text-sm py-4 text-center">거래내역이 없습니다.</p>`; return; }
-  box.innerHTML = list.slice(0,30).map(t => {
-    const income = String(t.Type).includes("입금");
-    return `<div class="flex items-center justify-between py-3">
+
+      <!-- Accounts & Services Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- My Accounts Column (2 Cols) -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <i class="fa-solid fa-credit-card text-blue-600"></i> 내 보유 계좌
+            </h3>
+            <button onclick="openApplyProductModal()" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold px-3 py-1.5 rounded-lg transition border border-blue-200 flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> 금융 상품 신청
+            </button>
+          </div>
+
+          <div id="student-accounts-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Dynamic Accounts Cards inserted here -->
+          </div>
+
+          <!-- Transaction History Table -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 mt-6">
+            <h3 class="font-bold text-slate-800 text-md mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> 최근 거래 내역
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-slate-400 border-b border-slate-100">
+                    <th class="pb-3 font-semibold">일시</th>
+                    <th class="pb-3 font-semibold">구분</th>
+                    <th class="pb-3 font-semibold">적요</th>
+                    <th class="pb-3 font-semibold text-right">금액</th>
+                  </tr>
+                </thead>
+                <tbody id="student-tx-history-tbody" class="divide-y divide-slate-50">
+                  <!-- Dynamic History Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Transfer Side Card -->
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+            <h3 class="font-bold text-slate-800 text-md mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-paper-plane text-emerald-600"></i> 계좌 간 송금
+            </h3>
+            <form id="student-transfer-form" onsubmit="handleStudentTransfer(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">출금 계좌</label>
+                <select id="transfer-from-acc" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+                  <!-- Options generated dynamically -->
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">입금 대상 계좌번호 (Acc_ID)</label>
+                <input type="text" id="transfer-to-acc" required placeholder="예: ACC-170000000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">송금 금액 (원)</label>
+                <input type="number" id="transfer-amount" min="1" required placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">적요 / 메모</label>
+                <input type="text" id="transfer-desc" placeholder="예: 용돈 이체" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
+                송금 실행
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TEACHER DASHBOARD VIEW -->
+    <section id="view-teacher" class="hidden space-y-6">
+      <div class="bg-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="text-xs font-medium bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 px-3 py-1 rounded-full">교사 관리자 포털</span>
+          <h2 class="text-2xl font-bold mt-2">학급 금융 종합 관리 시스템</h2>
+          <p class="text-xs text-slate-400 mt-1">학생 상품 승인, 직권 입출금, 매점 상품 추가 및 모드 전환을 실행합니다.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="launchAtmMode()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-vault"></i> 학급 ATM 모드
+          </button>
+          <button onclick="launchKioskMode()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-store"></i> 키오스크 실행
+          </button>
+        </div>
+      </div>
+
+      <!-- Teacher Navigation Tabs -->
+      <div class="flex border-b border-slate-200 gap-4 text-sm font-semibold">
+        <button id="tab-btn-pending" onclick="switchTeacherTab('pending')" class="pb-3 border-b-2 border-blue-600 text-blue-600 transition">
+          <i class="fa-solid fa-clipboard-check mr-1"></i> 상품 신청 승인 관리
+        </button>
+        <button id="tab-btn-deposit" onclick="switchTeacherTab('deposit')" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+          <i class="fa-solid fa-hand-holding-dollar mr-1"></i> 직권 입금 / 지원금
+        </button>
+        <button id="tab-btn-kiosk-admin" onclick="switchTeacherTab('kiosk-admin')" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+          <i class="fa-solid fa-boxes-packing mr-1"></i> 키오스크 매점 등록
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Pending Approvals -->
+      <div id="teacher-tab-pending" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-slate-800 text-md">대기 중인 상품 신청 목록</h3>
+          <button onclick="loadPendingApplications()" class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1">
+            <i class="fa-solid fa-rotate-right"></i> 새로고침
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-100">
+                <th class="pb-3 font-semibold">신청 ID</th>
+                <th class="pb-3 font-semibold">학생 ID</th>
+                <th class="pb-3 font-semibold">상품 ID / 상품명</th>
+                <th class="pb-3 font-semibold">신청 일시</th>
+                <th class="pb-3 font-semibold text-center">상태 / 승인 조치</th>
+              </tr>
+            </thead>
+            <tbody id="teacher-pending-tbody" class="divide-y divide-slate-50">
+              <!-- Inserted dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Teacher Deposit -->
+      <div id="teacher-tab-deposit" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 max-w-lg">
+        <h3 class="font-bold text-slate-800 text-md mb-4">학생 직권 지원금/상금 지급</h3>
+        <form id="teacher-deposit-form" onsubmit="handleTeacherDepositSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">대상 학생 ID (Student_ID)</label>
+            <input type="text" id="teacher-dep-student-id" placeholder="예: 10101" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">지급 금액 (원)</label>
+            <input type="number" id="teacher-dep-amount" min="1" placeholder="0" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">지급 사유 / 적요</label>
+            <input type="text" id="teacher-dep-desc" placeholder="예: 주번 활동비, 교내 상금" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow transition">
+            지원금 지급 확정
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab Content 3: Kiosk Admin Item Registration -->
+      <div id="teacher-tab-kiosk-admin" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 max-w-lg">
+        <h3 class="font-bold text-slate-800 text-md mb-4">키오스크 매점 신규 상품 등록</h3>
+        <form id="teacher-kiosk-item-form" onsubmit="handleAddKioskItemSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">매장명 (Store_Name)</label>
+            <input type="text" id="kiosk-reg-store" placeholder="예: 꿈나무 매점" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">카테고리</label>
+            <input type="text" id="kiosk-reg-category" placeholder="예: 간식, 문구, 음료" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">상품명 (Item_Name)</label>
+            <input type="text" id="kiosk-reg-name" placeholder="예: 맛있는 초코빵" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">가격 (Price)</label>
+            <input type="number" id="kiosk-reg-price" min="0" placeholder="500" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">이미지 URL 또는 FontAwesome 아이콘 클래스</label>
+            <input type="text" id="kiosk-reg-image" placeholder="http://... 또는 fa-solid fa-cookie" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500">
+            <p class="text-[10px] text-slate-400 mt-1">http 로 시작하면 이미지, 아니면 FontAwesome 아이콘으로 자동 변환됩니다.</p>
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow transition">
+            매점 상품 등록하기
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 4. KIOSK FULLSCREEN MODAL VIEW -->
+  <div id="modal-kiosk" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 hidden flex flex-col">
+    <!-- Kiosk Top Header -->
+    <div class="bg-emerald-800 text-white px-6 py-4 flex justify-between items-center shadow-lg">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center ${income?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500'}">
-          <i class="fa-solid ${income?'fa-arrow-down':'fa-arrow-up'}"></i>
+        <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-xl shadow">
+          <i class="fa-solid fa-shop"></i>
         </div>
         <div>
-          <p class="font-semibold text-sm">${t.Desc||t.Type}</p>
-          <p class="text-xs text-slate-400">${t.Timestamp||""}</p>
+          <h2 class="text-xl font-bold">학급 무인 키오스크</h2>
+          <p class="text-xs text-emerald-200">상품을 선택한 후 결제하기를 눌러주세요</p>
         </div>
       </div>
-      <span class="font-bold ${income?'text-emerald-600':'text-red-500'}">${income?'+':'-'}${won(t.Amount)}</span>
-    </div>`;
-  }).join("");
-}
+      <button onclick="closeKioskMode()" class="px-4 py-2 bg-emerald-900/80 hover:bg-emerald-950 text-white text-xs font-semibold rounded-xl border border-emerald-700 transition">
+        <i class="fa-solid fa-xmark mr-1"></i> 키오스크 종료
+      </button>
+    </div>
 
-/* 계좌이체 */
-function openTransfer(){
-  openForm("계좌이체", `
-    <div class="space-y-3">
-      <input id="tf-to" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="받는 사람 학번" />
-      <input id="tf-amt" type="number" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="이체 금액" />
-      <input id="tf-desc" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none" placeholder="메모 (선택)" />
-      <button onclick="doTransfer(this)" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold">이체하기</button>
-    </div>`);
-}
-async function doTransfer(btn){
-  const toStudentId = document.getElementById("tf-to").value.trim();
-  const amount = Number(document.getElementById("tf-amt").value);
-  const desc = document.getElementById("tf-desc").value.trim() || "계좌이체";
-  if(!toStudentId || !amount || amount<=0){ toast("받는 학번과 금액을 확인하세요.","warn"); return; }
-  loading(btn,true);
-  try{
-    const r = await apiPost("transfer",{ fromStudentId: state.user.Student_ID, toStudentId, amount, desc });
-    if(r.status==="success"){ toast("이체 완료!","ok"); closeForm(); loadStudentData(); }
-    else toast(r.message||"이체 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-  finally{ loading(btn,false); }
-}
+    <!-- Kiosk Body: Stores Tabs + Items Grid + Cart Sidebar -->
+    <div class="flex-grow flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
+      <!-- Left: Store Tabs & Catalog -->
+      <div class="flex-grow flex flex-col min-w-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        <!-- Store Name Dynamic Tabs -->
+        <div id="kiosk-store-tabs" class="flex border-b border-slate-100 overflow-x-auto p-2 bg-slate-50 gap-2">
+          <!-- Rendered dynamically -->
+        </div>
 
-/* 금융상품 */
-async function openProducts(){
-  openForm("금융상품 신청", `<p class="text-center text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin"></i> 불러오는 중...</p>`);
-  const r = await apiGet("Products");
-  state.products = r.data || [];
-  if(!state.products.length){ document.getElementById("form-body").innerHTML = `<p class="text-center text-slate-400 py-6">등록된 상품이 없습니다.</p>`; return; }
-  document.getElementById("form-body").innerHTML = state.products.map((p,i)=>{
-    const img = /^https?:\/\//i.test(p.Image_URL||"")
-      ? `<img src="${p.Image_URL}" class="w-12 h-12 rounded-xl object-cover" onerror="this.style.display='none'">`
-      : `<div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl"><i class="fa-solid fa-piggy-bank"></i></div>`;
-    return `<div class="border border-slate-100 rounded-2xl p-4 mb-3">
-      <div class="flex items-center gap-3">
-        ${img}
-        <div class="flex-1">
-          <p class="font-bold">${p.Name}</p>
-          <p class="text-xs text-slate-400">${p.Category||""} · ${p.Rate_Or_Benefit||""}</p>
+        <!-- Items Grid Container -->
+        <div id="kiosk-items-grid" class="flex-grow p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <!-- Rendered dynamically -->
         </div>
       </div>
-      <p class="text-sm text-slate-500 mt-2">${p.Desc||""}</p>
-      <div class="flex gap-2 mt-3">
-        <input id="pa-amt-${i}" type="number" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 outline-none text-sm" placeholder="예치/가입 금액">
-        <button onclick="applyProduct(${i}, this)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold whitespace-nowrap">신청</button>
-      </div>
-    </div>`;
-  }).join("");
-}
-async function applyProduct(i, btn){
-  const p = state.products[i];
-  const amount = Number(document.getElementById("pa-amt-"+i).value) || 0;
-  loading(btn,true);
-  try{
-    const r = await apiPost("applyProduct",{
-      studentId: state.user.Student_ID, name: state.user.Name,
-      productName: p.Name, amount, desc: "상품가입: "+p.Name
-    });
-    if(r.status==="success"){ toast("신청 완료! 승인 대기 중입니다.","ok"); closeForm(); }
-    else toast(r.message||"신청 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-  finally{ loading(btn,false); }
-}
 
-/* ==========================================================
- *  교사 화면
- * ========================================================== */
-async function loadTeacherData(){
-  try{
-    const [penR, usrR] = await Promise.all([ apiGet("Pending"), apiGet("Users") ]);
-    state.pending = penR.data || [];
-    state.users = usrR.data || [];
-    renderPending();
-    // 학번 자동완성
-    document.getElementById("student-list").innerHTML =
-      state.users.map(u=>`<option value="${u.Student_ID}">${u.Name} (${u.Student_ID})</option>`).join("");
-  }catch(e){ toast("로드 오류: "+e.message,"err"); }
-}
-function renderPending(){
-  const box = document.getElementById("tch-pending");
-  if(!state.pending.length){ box.innerHTML = `<p class="text-slate-400 text-sm py-3">대기 중인 신청이 없습니다.</p>`; return; }
-  box.innerHTML = state.pending.map(p=>`
-    <div class="flex flex-wrap items-center justify-between gap-2 border border-slate-100 rounded-xl p-3">
-      <div>
-        <p class="font-semibold text-sm">${p.StudentName||''} <span class="text-slate-400">(${p.Student_ID})</span></p>
-        <p class="text-xs text-slate-500">${p.Type} · ${p.Desc||''} ${p.Amount?('· '+won(p.Amount)):''}</p>
-      </div>
-      <div class="flex gap-2">
-        <button onclick="approve('${p.Pending_ID}','approve',this)" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">승인</button>
-        <button onclick="approve('${p.Pending_ID}','reject',this)" class="px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold">거절</button>
-      </div>
-    </div>`).join("");
-}
-async function approve(pendingId, decision, btn){
-  loading(btn,true,"");
-  try{
-    const r = await apiPost("approve",{ pendingId, decision });
-    if(r.status==="success"){ toast(decision==="approve"?"승인 완료":"거절 처리","ok"); loadTeacherData(); }
-    else toast(r.message||"처리 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-  finally{ loading(btn,false); }
-}
-
-/* 직권 입출금 : 입금=teacherDeposit / 출금=atmTransaction(withdraw) */
-async function teacherAdjust(){
-  const studentId = document.getElementById("dep-sid").value.trim();
-  const type = document.getElementById("dep-type").value;
-  const amount = Number(document.getElementById("dep-amt").value);
-  const desc = document.getElementById("dep-desc").value.trim() || (type==="deposit"?"교사 입금":"교사 차감");
-  if(!studentId || !amount || amount<=0){ toast("학번과 금액을 확인하세요.","warn"); return; }
-  try{
-    let r;
-    if(type==="deposit"){
-      r = await apiPost("teacherDeposit",{ studentId, amount, desc });
-    }else{
-      r = await apiPost("atmTransaction",{ studentId, type:"withdraw", amount, desc:"교사 직권 출금 - "+desc });
-    }
-    if(r.status==="success"){ toast("처리 완료!","ok"); document.getElementById("dep-amt").value=""; document.getElementById("dep-desc").value=""; }
-    else toast(r.message||"처리 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-}
-
-/* 키오스크 메뉴 추가 */
-async function addKioskItem(){
-  const storeName = document.getElementById("k-store").value.trim();
-  const category  = document.getElementById("k-cat").value.trim();
-  const itemName  = document.getElementById("k-item").value.trim();
-  const price     = Number(document.getElementById("k-price").value);
-  const imageUrl  = document.getElementById("k-img").value.trim();
-  if(!storeName || !itemName){ toast("매장명과 메뉴명은 필수입니다.","warn"); return; }
-  try{
-    const r = await apiPost("addKioskItem",{ storeName, category, itemName, price, imageUrl });
-    if(r.status==="success"){
-      toast("메뉴 등록 완료!","ok");
-      ["k-item","k-price","k-img"].forEach(id=>document.getElementById(id).value="");
-    } else toast(r.message||"등록 실패","err");
-  }catch(e){ toast("오류: "+e.message,"err"); }
-}
-
-/* ==========================================================
- *  키오스크 모드
- * ========================================================== */
-async function launchKiosk(){
-  showScreen("screen-kiosk");
-  state.cart = [];
-  document.getElementById("kiosk-menu").innerHTML = `<p class="col-span-full text-center text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin"></i> 불러오는 중...</p>`;
-  const r = await apiGet("KioskStores");
-  state.kiosk = r.data || [];
-  buildKioskTabs();
-  renderCart();
-}
-function buildKioskTabs(){
-  const stores = [...new Set(state.kiosk.map(k=>k.Store_Name).filter(Boolean))];
-  const tabs = document.getElementById("kiosk-tabs");
-  if(!stores.length){ tabs.innerHTML=""; document.getElementById("kiosk-menu").innerHTML=`<p class="col-span-full text-center text-slate-400 py-10">등록된 상품이 없습니다.</p>`; return; }
-  if(!state.currentStore || !stores.includes(state.currentStore)) state.currentStore = stores[0];
-  tabs.innerHTML = stores.map(s=>`
-    <button onclick="selectStore('${s.replace(/'/g,"\\'")}')"
-      class="px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold ${s===state.currentStore?'bg-emerald-600 text-white':'bg-slate-100 text-slate-600'}">
-      <i class="fa-solid fa-store mr-1"></i>${s}
-    </button>`).join("");
-  renderKioskMenu();
-}
-function selectStore(s){ state.currentStore = s; buildKioskTabs(); }
-
-function itemMedia(item){
-  const url = item.Image_URL || "";
-  if(/^https?:\/\//i.test(url)){
-    return `<img src="${url}" class="w-full h-24 object-cover rounded-xl"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-            <div class="w-full h-24 rounded-xl bg-emerald-50 text-emerald-500 items-center justify-center text-3xl" style="display:none">
-              <i class="fa-solid fa-utensils"></i></div>`;
-  }
-  const icon = /^fa[- ]/.test(url) ? url : "fa-solid fa-utensils";
-  return `<div class="w-full h-24 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-3xl"><i class="${icon}"></i></div>`;
-}
-function renderKioskMenu(){
-  const items = state.kiosk.filter(k=>k.Store_Name===state.currentStore);
-  const box = document.getElementById("kiosk-menu");
-  box.innerHTML = items.map((it,idx)=>{
-    const gi = state.kiosk.indexOf(it);
-    return `<button onclick="addToCart(${gi})" class="bg-white rounded-2xl p-3 shadow hover:shadow-md transition text-left fade-in">
-      ${itemMedia(it)}
-      <p class="font-bold text-sm mt-2 truncate">${it.Item_Name}</p>
-      <p class="text-xs text-slate-400">${it.Category||""}</p>
-      <p class="text-emerald-600 font-extrabold mt-1">${won(it.Price)}</p>
-    </button>`;
-  }).join("");
-}
-function addToCart(gi){
-  const it = state.kiosk[gi];
-  const found = state.cart.find(c=>c.gi===gi);
-  if(found) found.qty++;
-  else state.cart.push({ gi, name: it.Item_Name, price: Number(it.Price)||0, qty:1 });
-  renderCart();
-}
-function changeQty(gi, delta){
-  const c = state.cart.find(x=>x.gi===gi); if(!c) return;
-  c.qty += delta;
-  if(c.qty<=0) state.cart = state.cart.filter(x=>x.gi!==gi);
-  renderCart();
-}
-function removeCart(gi){ state.cart = state.cart.filter(x=>x.gi!==gi); renderCart(); }
-function cartTotal(){ return state.cart.reduce((s,c)=>s+c.price*c.qty,0); }
-function renderCart(){
-  const box = document.getElementById("kiosk-cart");
-  if(!state.cart.length){ box.innerHTML = `<p class="text-slate-300 text-center py-10"><i class="fa-solid fa-basket-shopping text-3xl block mb-2"></i>담긴 상품이 없습니다</p>`; }
-  else {
-    box.innerHTML = state.cart.map(c=>`
-      <div class="flex items-center justify-between py-3">
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm truncate">${c.name}</p>
-          <p class="text-emerald-600 text-sm font-bold">${won(c.price*c.qty)}</p>
+      <!-- Right: Cart Sidebar -->
+      <div class="w-full md:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+        <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+          <h3 class="font-bold text-md flex items-center gap-2">
+            <i class="fa-solid fa-cart-shopping text-emerald-400"></i> 장바구니
+          </h3>
+          <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-white transition">전체 삭제</button>
         </div>
+
+        <!-- Cart Items List -->
+        <div id="kiosk-cart-items" class="flex-grow p-4 overflow-y-auto divide-y divide-slate-100 space-y-2">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Cart Footer & Total -->
+        <div class="p-5 bg-slate-50 border-t border-slate-200 space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-medium text-slate-500">총 결제 금액</span>
+            <span id="kiosk-cart-total" class="text-2xl font-black text-emerald-600">0 원</span>
+          </div>
+          <button onclick="openNfcPaymentModal()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base rounded-2xl shadow-lg shadow-emerald-600/30 transition flex justify-center items-center gap-2">
+            <i class="fa-solid fa-wifi"></i>
+            <span>NFC 카드 태그 결제</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. ATM FULLSCREEN TERMINAL VIEW (★ CORE REQUIREMENT ★) -->
+  <div id="modal-atm" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-2 sm:p-6">
+    <div class="w-full max-w-4xl bg-slate-900 border-4 border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[800px] text-slate-100 atm-screen-glow relative">
+      
+      <!-- ATM Terminal Header Bar -->
+      <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 px-6 py-4 border-b border-blue-800/50 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600/30 rounded-xl border border-blue-400/30 flex items-center justify-center text-blue-400 text-xl font-black">
+            <i class="fa-solid fa-vault"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-extrabold tracking-wide text-blue-100">CLASSROOM BANK ATM</h2>
+            <p class="text-[11px] text-blue-300">24시간 스마트 무인 금융 자동화 기기</p>
+          </div>
+        </div>
+        <button onclick="closeAtmMode()" class="px-3.5 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-semibold rounded-xl transition">
+          <i class="fa-solid fa-power-off mr-1"></i> ATM 종료
+        </button>
+      </div>
+
+      <!-- ATM Dynamic Screen Body -->
+      <div id="atm-screen-content" class="flex-grow p-6 md:p-10 flex flex-col justify-between overflow-y-auto">
+        <!-- Default ATM Main Menu inserted here -->
+      </div>
+
+      <!-- ATM Bottom Machine Footer -->
+      <div class="bg-slate-950 px-6 py-3 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
         <div class="flex items-center gap-2">
-          <button onclick="changeQty(${c.gi},-1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold">−</button>
-          <span class="w-6 text-center font-bold">${c.qty}</span>
-          <button onclick="changeQty(${c.gi},1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold">+</button>
-          <button onclick="removeCart(${c.gi})" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><i class="fa-solid fa-trash text-xs"></i></button>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>ATM 시스템 정상 작동 중</span>
         </div>
-      </div>`).join("");
-  }
-  document.getElementById("kiosk-total").textContent = won(cartTotal());
-}
-function kioskCheckout(){
-  if(!state.cart.length){ toast("장바구니가 비어있습니다.","warn"); return; }
-  const total = cartTotal();
-  openNFC("결제 진행", "결제 금액 " + won(total), ()=>{
-    // 실제 키오스크 결제 완료 처리 (요구사항: NFC 태그 팝업)
-    toast("결제 완료! " + won(total), "ok");
-    state.cart = [];
-    renderCart();
-  });
-}
-
-/* ==========================================================
- *  ATM 모드
- * ========================================================== */
-let atmAmount = "";
-function launchATM(){
-  showScreen("screen-atm");
-  document.getElementById("atm-holder").textContent = "카드 소유자: " + state.user.Name + " (" + state.user.Student_ID + ")";
-  atmHome();
-}
-function atmHome(){
-  atmAmount = "";
-  document.getElementById("atm-body").innerHTML = `
-    <p class="text-center text-blue-200 mb-6 mt-4">원하시는 업무를 선택하세요</p>
-    <div class="grid grid-cols-2 gap-4">
-      ${atmMenuBtn("예금조회","fa-magnifying-glass-dollar","atmBalance()","bg-white/10")}
-      ${atmMenuBtn("현금입금","fa-money-bill-wave","atmKeypad('deposit')","bg-emerald-600")}
-      ${atmMenuBtn("현금출금","fa-hand-holding-dollar","atmKeypad('withdraw')","bg-blue-600")}
-      ${atmMenuBtn("계좌이체","fa-right-left","atmTransferForm()","bg-indigo-600")}
-    </div>`;
-}
-function atmMenuBtn(label, icon, onclick, bg){
-  return `<button onclick="${onclick}" class="atm-btn ${bg} hover:opacity-90 transition rounded-3xl p-8 flex flex-col items-center justify-center gap-3 shadow-lg">
-    <i class="fa-solid ${icon} text-4xl"></i><span class="text-xl font-bold">${label}</span></button>`;
-}
-
-/* 예금조회 → 카드 태그 후 잔액 표시 */
-function atmBalance(){
-  openNFC("예금조회", "카드를 태그해 주세요", async ()=>{
-    const r = await apiGet("Accounts",{ studentId: state.user.Student_ID });
-    const acc = (r.data||[])[0];
-    const bal = acc ? acc.Balance : 0;
-    document.getElementById("atm-body").innerHTML = `
-      <div class="bg-white/10 rounded-3xl p-8 text-center fade-in mt-4">
-        <p class="text-blue-200 mb-2">${state.user.Name} 님의 현재 잔액</p>
-        <p class="text-5xl font-extrabold my-4">${won(bal)}</p>
-        <p class="text-blue-300 text-sm">${acc?acc.Acc_Name:''} · ${acc?acc.Acc_ID:''}</p>
+        <span>명세표 출력 가능</span>
       </div>
-      <button onclick="atmHome()" class="atm-btn w-full mt-5 py-4 rounded-2xl bg-white/10 hover:bg-white/20 font-bold text-lg">처음으로</button>`;
-  });
-}
+    </div>
+  </div>
 
-/* 입금/출금 금액 키패드 */
-function atmKeypad(mode){
-  atmAmount = "";
-  const label = mode==="deposit" ? "현금입금" : "현금출금";
-  const color = mode==="deposit" ? "bg-emerald-600" : "bg-blue-600";
-  document.getElementById("atm-body").innerHTML = `
-    <div class="mt-2">
-      <p class="text-center text-blue-200 mb-2">${label} 금액</p>
-      <div id="atm-display" class="bg-white/10 rounded-2xl py-6 text-center text-4xl font-extrabold mb-4">₩0</div>
-      <div class="grid grid-cols-4 gap-2 mb-3">
-        ${[10000,30000,50000,100000].map(v=>`<button onclick="atmQuick(${v})" class="atm-btn bg-white/10 hover:bg-white/20 rounded-xl py-3 font-bold text-sm">+${v.toLocaleString()}</button>`).join("")}
+  <!-- MODAL: Financial Product Application Modal -->
+  <div id="modal-apply-prod" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-slate-800 text-lg">금융 상품 신청</h3>
+        <button onclick="closeApplyProductModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div class="grid grid-cols-3 gap-2">
-        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="atmKey('${n}')" class="atm-btn bg-white/10 hover:bg-white/20 rounded-xl py-5 text-2xl font-bold">${n}</button>`).join("")}
-        <button onclick="atmKey('000')" class="atm-btn bg-white/10 hover:bg-white/20 rounded-xl py-5 text-xl font-bold">000</button>
-        <button onclick="atmKey('0')" class="atm-btn bg-white/10 hover:bg-white/20 rounded-xl py-5 text-2xl font-bold">0</button>
-        <button onclick="atmKey('back')" class="atm-btn bg-white/10 hover:bg-white/20 rounded-xl py-5 text-xl font-bold"><i class="fa-solid fa-delete-left"></i></button>
+      <p class="text-xs text-slate-500 mb-4">원하시는 금융 상품(적금/예금 등)을 선택하세요. 담임 교사 승인 후 계좌가 개설됩니다.</p>
+      
+      <div id="apply-products-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+        <!-- Inserted dynamically -->
       </div>
-      <div class="grid grid-cols-2 gap-3 mt-4">
-        <button onclick="atmHome()" class="atm-btn py-4 rounded-2xl bg-white/10 hover:bg-white/20 font-bold">취소</button>
-        <button onclick="atmSubmit('${mode}')" class="atm-btn py-4 rounded-2xl ${color} hover:opacity-90 font-bold text-lg">확인</button>
-      </div>
-    </div>`;
-  updateAtmDisplay();
-}
-function atmKey(k){
-  if(k==="back") atmAmount = atmAmount.slice(0, -1);
-  else atmAmount = (atmAmount + k).replace(/^0+/,"").slice(0,9);
-  updateAtmDisplay();
-}
-function atmQuick(v){ atmAmount = String((Number(atmAmount)||0) + v); updateAtmDisplay(); }
-function updateAtmDisplay(){
-  const el = document.getElementById("atm-display");
-  if(el) el.textContent = won(Number(atmAmount)||0);
-}
-function atmSubmit(mode){
-  const amount = Number(atmAmount)||0;
-  if(amount<=0){ toast("금액을 입력하세요.","warn"); return; }
-  const title = mode==="deposit" ? "현금입금" : "현금출금";
-  openNFC(title, won(amount) + " " + title, ()=> doAtmTx(mode, amount));
-}
-async function doAtmTx(type, amount, toStudentId){
-  const payload = { studentId: state.user.Student_ID, type, amount };
-  if(type==="transfer") payload.toStudentId = toStudentId;
-  try{
-    const r = await apiPost("atmTransaction", payload);
-    if(r.status==="success"){
-      const bal = (r.data && (r.data.Balance!==undefined ? r.data.Balance : (r.data.from && r.data.from.Balance)));
-      atmResult(true, type, amount, bal, toStudentId);
-    } else atmResult(false, type, amount, null, toStudentId, r.message);
-  }catch(e){ atmResult(false, type, amount, null, toStudentId, e.message); }
-}
-function atmResult(ok, type, amount, bal, to, msg){
-  const label = type==="deposit"?"입금":type==="withdraw"?"출금":"이체";
-  document.getElementById("atm-body").innerHTML = `
-    <div class="text-center mt-6 fade-in">
-      <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl mb-4 ${ok?'bg-emerald-500':'bg-red-500'}">
-        <i class="fa-solid ${ok?'fa-check':'fa-xmark'}"></i>
-      </div>
-      <h3 class="text-2xl font-extrabold mb-2">${ok?label+' 완료':label+' 실패'}</h3>
-      ${ok ? `<p class="text-blue-200 mb-1">${label} 금액 <b>${won(amount)}</b>${to?(' → '+to):''}</p>
-              ${bal!==undefined&&bal!==null?`<p class="text-blue-300">거래 후 잔액 <b>${won(bal)}</b></p>`:''}`
-           : `<p class="text-red-300">${msg||'처리 중 오류가 발생했습니다.'}</p>`}
-      <button onclick="atmHome()" class="atm-btn w-full mt-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 font-bold text-lg">처음으로</button>
-    </div>`;
-}
+    </div>
+  </div>
 
-/* 계좌이체 : 입력 → 보이스피싱 경고 → NFC → 처리 */
-function atmTransferForm(){
-  document.getElementById("atm-body").innerHTML = `
-    <div class="mt-2 max-w-md mx-auto">
-      <p class="text-center text-blue-200 mb-4">계좌이체</p>
-      <label class="text-sm text-blue-200">받는 사람 학번</label>
-      <input id="atm-to" class="w-full mt-1 mb-4 px-4 py-4 rounded-2xl bg-white/10 text-white text-lg outline-none placeholder-blue-300" placeholder="받는 학번 입력">
-      <label class="text-sm text-blue-200">이체 금액</label>
-      <input id="atm-tf-amt" type="number" class="w-full mt-1 mb-6 px-4 py-4 rounded-2xl bg-white/10 text-white text-lg outline-none placeholder-blue-300" placeholder="금액 입력">
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="atmHome()" class="atm-btn py-4 rounded-2xl bg-white/10 hover:bg-white/20 font-bold">취소</button>
-        <button onclick="atmTransferConfirm()" class="atm-btn py-4 rounded-2xl bg-indigo-600 hover:opacity-90 font-bold text-lg">다음</button>
+  <!-- MODAL: Voice Phishing Prevention Warning Modal (★ ATM CORE REQUIRED ★) -->
+  <div id="modal-voice-phishing" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-center space-y-6">
+      <div class="w-20 h-20 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-full mx-auto flex items-center justify-center text-4xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
       </div>
-    </div>`;
-}
-function atmTransferConfirm(){
-  const to = document.getElementById("atm-to").value.trim();
-  const amount = Number(document.getElementById("atm-tf-amt").value)||0;
-  if(!to || amount<=0){ toast("받는 학번과 금액을 확인하세요.","warn"); return; }
-  // 1) 보이스피싱 경고 모달 → 확인 시에만 NFC 진입
-  openPhishing(()=>{
-    openNFC("계좌이체", won(amount) + " 이체", ()=> doAtmTx("transfer", amount, to));
-  });
-}
+      <div>
+        <h3 class="text-xl font-extrabold text-amber-400 mb-2">보이스피싱 / 금융사기 예방 안내</h3>
+        <p class="text-xs text-slate-300 leading-relaxed text-left bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+          ⚠️ <strong>송금 전 꼭 확인하세요!</strong><br><br>
+          • 검찰, 경찰, 금융감독원이나 선배/타인의 지시로 돈을 이체하고 계신가요?<br>
+          • 학급 내 강요나 사기에 의한 송금은 즉시 담임 선생님께 알려주세요.<br>
+          • 상대방의 계좌번호 및 이체 금액을 다시 한번 꼼꼼히 확인하세요.
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeVoicePhishingModal(false)" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl border border-slate-700 transition">
+          이체 취소
+        </button>
+        <button onclick="closeVoicePhishingModal(true)" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/30 transition">
+          확인하였으며 이체 진행
+        </button>
+      </div>
+    </div>
+  </div>
 
-/* 모드 종료 → 역할별 화면 복귀 */
-function exitMode(){ routeByRole(); }
+  <!-- MODAL: NFC Tagging Simulation Popup -->
+  <div id="modal-nfc-tag" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center space-y-6 relative overflow-hidden">
+      <div class="w-24 h-24 bg-blue-50 border-4 border-blue-500 text-blue-600 rounded-full mx-auto flex items-center justify-center text-4xl animate-nfc-pulse shadow-lg">
+        <i class="fa-solid fa-wifi"></i>
+      </div>
+      <div>
+        <h3 id="nfc-modal-title" class="text-lg font-bold text-slate-800">NFC 학생증 태그</h3>
+        <p id="nfc-modal-desc" class="text-xs text-slate-500 mt-1">NFC 리더기에 학생증을 태그하세요</p>
+      </div>
 
-/* 앱 타이틀 설정 로드 (선택) */
-(async function initSettings(){
-  try{
-    const r = await apiGet("AppSettings");
-    if(r.status==="success" && r.data && r.data.appTitle){
-      document.getElementById("app-title").textContent = r.data.appTitle;
-      document.title = r.data.appTitle;
+      <!-- Simulated Student ID Selection for testing -->
+      <div class="space-y-2 text-left pt-2 border-t border-slate-100">
+        <label class="block text-[11px] font-semibold text-slate-500">테스트용 학생 선택 (태그 대용)</label>
+        <select id="nfc-simulated-student-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+          <!-- Inserted dynamically -->
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeNfcModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-200">
+          취소
+        </button>
+        <button onclick="confirmNfcTag()" class="flex-1 py-2.5 bg-blue-600 text-white font-semibold text-xs rounded-xl hover:bg-blue-700 shadow">
+          태그 완료
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       GLOBAL STATE
+       ========================================================================== */
+    let currentUser = null; // { student_id, name, role }
+    let globalAccounts = [];
+    let globalProducts = [];
+    let globalKioskItems = [];
+    let globalPending = [];
+    let globalUsers = [];
+
+    // Kiosk Cart State
+    let cart = [];
+    let currentStoreFilter = "ALL";
+
+    // ATM State
+    let atmPendingTransferData = null; // { fromAcc, toAcc, amount, desc }
+    let nfcCallback = null; // Callback for NFC completion
+
+    /* ==========================================================================
+       INITIALIZATION & ROUTING
+       ========================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check stored session
+      const savedUser = localStorage.getItem("class_economy_user");
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          onLoginSuccess();
+        } catch(e) {
+          localStorage.removeItem("class_economy_user");
+          showView("view-login");
+        }
+      } else {
+        showView("view-login");
+      }
+    });
+
+    /* ==========================================================================
+       API UTILITIES
+       ========================================================================== */
+    async function apiGet(action, params = {}) {
+      try {
+        const queryParams = new URLSearchParams({ action, ...params });
+        const res = await fetch(`${APPS_SCRIPT_URL}?${queryParams.toString()}`);
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || json.error || "GET Request Failed");
+        return json.data;
+      } catch (err) {
+        showToast(err.message, "error");
+        console.error(`API GET [${action}] Error:`, err);
+        throw err;
+      }
     }
-  }catch(e){ /* 설정 없어도 무시 */ }
-})();
-</script>
+
+    async function apiPost(action, body = {}) {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, ...body })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || json.error || "POST Request Failed");
+        return json;
+      } catch (err) {
+        showToast(err.message, "error");
+        console.error(`API POST [${action}] Error:`, err);
+        throw err;
+      }
+    }
+
+    /* ==========================================================================
+       UI HELPERS & TOASTS
+       ========================================================================== */
+    function showToast(msg, type = "info") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      
+      let bgColor = "bg-slate-900";
+      let icon = "fa-circle-info";
+      
+      if (type === "success") { bgColor = "bg-emerald-600"; icon = "fa-circle-check"; }
+      if (type === "error") { bgColor = "bg-rose-600"; icon = "fa-circle-exclamation"; }
+
+      toast.className = `pointer-events-auto ${bgColor} text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold transform transition duration-300 ease-out translate-y-2 opacity-0`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${msg}</span>`;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      });
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-2");
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function showView(viewId) {
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-student").classList.add("hidden");
+      document.getElementById("view-teacher").classList.add("hidden");
+
+      document.getElementById(viewId).classList.remove("hidden");
+    }
+
+    function fillDemo(id, pin) {
+      document.getElementById("login-student-id").value = id;
+      document.getElementById("login-pin").value = pin;
+    }
+
+    /* ==========================================================================
+       AUTHENTICATION & LOGIN
+       ========================================================================== */
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const student_id = document.getElementById("login-student-id").value.trim();
+      const pin = document.getElementById("login-pin").value.trim();
+      const btn = document.getElementById("btn-login-submit");
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 로그인 중...`;
+
+      try {
+        const res = await apiPost("login", { student_id, pin });
+        currentUser = res.user;
+        localStorage.setItem("class_economy_user", JSON.stringify(currentUser));
+        showToast("반갑습니다! 로그인되었습니다.", "success");
+        onLoginSuccess();
+      } catch (err) {
+        // Error toast handled in apiPost
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>로그인</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
+      }
+    }
+
+    function onLoginSuccess() {
+      // Header Info
+      document.getElementById("header-user-info").classList.remove("hidden");
+      document.getElementById("user-display-name").innerText = `${currentUser.name} 님`;
+      document.getElementById("user-display-role").innerText = currentUser.role === "teacher" ? "교사 관리자" : `학번: ${currentUser.student_id}`;
+
+      if (currentUser.role === "teacher") {
+        showView("view-teacher");
+        loadTeacherDashboard();
+      } else {
+        showView("view-student");
+        loadStudentDashboard();
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem("class_economy_user");
+      document.getElementById("header-user-info").classList.add("hidden");
+      showView("view-login");
+      showToast("로그아웃 되었습니다.", "info");
+    }
+
+    function navigateHome() {
+      if (currentUser) onLoginSuccess();
+    }
+
+    /* ==========================================================================
+       STUDENT DASHBOARD
+       ========================================================================== */
+    async function loadStudentDashboard() {
+      if (!currentUser) return;
+      
+      try {
+        // Load Accounts & TxHistory in parallel
+        const [accs, txs] = await Promise.all([
+          apiGet("Accounts", { student_id: currentUser.student_id }),
+          apiGet("TxHistory", { student_id: currentUser.student_id })
+        ]);
+
+        globalAccounts = accs;
+        renderStudentAccounts(accs);
+        renderStudentTxHistory(txs);
+      } catch (err) {
+        console.error("Student dashboard load error:", err);
+      }
+    }
+
+    function refreshStudentData() {
+      loadStudentDashboard();
+      showToast("데이터를 갱신했습니다.", "info");
+    }
+
+    function renderStudentAccounts(accs) {
+      const container = document.getElementById("student-accounts-list");
+      const transferSelect = document.getElementById("transfer-from-acc");
+      container.innerHTML = "";
+      transferSelect.innerHTML = "";
+
+      let total = 0;
+
+      if (accs.length === 0) {
+        container.innerHTML = `<div class="col-span-2 p-6 bg-white rounded-2xl text-center text-slate-400 text-xs">개설된 계좌가 없습니다.</div>`;
+        document.getElementById("student-total-balance").innerText = "0 원";
+        return;
+      }
+
+      accs.forEach(acc => {
+        const bal = Number(acc.Balance || 0);
+        total += bal;
+
+        // Account Card UI
+        const card = document.createElement("div");
+        card.className = "bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden";
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${acc.Acc_Type === 'CHECKING' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${acc.Acc_Type}</span>
+              <h4 class="font-bold text-slate-800 text-sm mt-1">${acc.Acc_Name}</h4>
+              <p class="text-[11px] text-slate-400 font-mono">${acc.Acc_ID}</p>
+            </div>
+            <i class="fa-solid ${acc.Acc_Type === 'CHECKING' ? 'fa-wallet text-blue-500' : 'fa-piggy-bank text-emerald-500'} text-xl opacity-80"></i>
+          </div>
+          <p class="text-xl font-black text-slate-900">${bal.toLocaleString()} 원</p>
+        `;
+        container.appendChild(card);
+
+        // Select Options
+        const opt = document.createElement("option");
+        opt.value = acc.Acc_ID;
+        opt.innerText = `${acc.Acc_Name} (${bal.toLocaleString()}원)`;
+        transferSelect.appendChild(opt);
+      });
+
+      document.getElementById("student-total-balance").innerText = `${total.toLocaleString()} 원`;
+    }
+
+    function renderStudentTxHistory(txs) {
+      const tbody = document.getElementById("student-tx-history-tbody");
+      tbody.innerHTML = "";
+
+      if (txs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400">거래 내역이 없습니다.</td></tr>`;
+        return;
+      }
+
+      // Sort newest first
+      const sorted = [...txs].reverse();
+
+      sorted.forEach(tx => {
+        const isDeposit = tx.Type === "DEPOSIT" || tx.Type === "TEACHER_DEPOSIT";
+        const dateStr = tx.Timestamp ? new Date(tx.Timestamp).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-";
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="py-3 text-slate-400">${dateStr}</td>
+          <td class="py-3 font-semibold ${isDeposit ? 'text-emerald-600' : 'text-rose-500'}">${tx.Type}</td>
+          <td class="py-3 text-slate-700 font-medium">${tx.Desc || '-'}</td>
+          <td class="py-3 text-right font-bold ${isDeposit ? 'text-emerald-600' : 'text-rose-500'}">
+            ${isDeposit ? '+' : '-'}${Number(tx.Amount).toLocaleString()} 원
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function handleStudentTransfer(e) {
+      e.preventDefault();
+      const from_acc_id = document.getElementById("transfer-from-acc").value;
+      const to_acc_id = document.getElementById("transfer-to-acc").value.trim();
+      const amount = Number(document.getElementById("transfer-amount").value);
+      const desc = document.getElementById("transfer-desc").value.trim();
+
+      try {
+        await apiPost("transfer", { from_acc_id, to_acc_id, amount, desc });
+        showToast("성공적으로 이체되었습니다.", "success");
+        document.getElementById("student-transfer-form").reset();
+        loadStudentDashboard();
+      } catch (err) {
+        // Handled in apiPost
+      }
+    }
+
+    /* ==========================================================================
+       PRODUCT APPLICATION MODAL
+       ========================================================================== */
+    async function openApplyProductModal() {
+      const modal = document.getElementById("modal-apply-prod");
+      const container = document.getElementById("apply-products-list");
+      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</p>`;
+      modal.classList.remove("hidden");
+
+      try {
+        globalProducts = await apiGet("Products");
+        container.innerHTML = "";
+
+        if (globalProducts.length === 0) {
+          container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">신청 가능한 상품이 없습니다.</p>`;
+          return;
+        }
+
+        globalProducts.forEach(prod => {
+          const item = document.createElement("div");
+          item.className = "p-4 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center";
+          item.innerHTML = `
+            <div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">${prod.Category || '금융'}</span>
+              <h4 class="font-bold text-slate-800 text-sm mt-1">${prod.Name}</h4>
+              <p class="text-xs text-slate-500 mt-0.5">${prod.Desc || ''}</p>
+              <p class="text-xs font-semibold text-blue-600 mt-1">혜택: ${prod.Rate_Or_Benefit || '-'}</p>
+            </div>
+            <button onclick="submitProductApplication('${prod.Prod_ID}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition">
+              신청
+            </button>
+          `;
+          container.appendChild(item);
+        });
+      } catch (err) {
+        closeApplyProductModal();
+      }
+    }
+
+    function closeApplyProductModal() {
+      document.getElementById("modal-apply-prod").classList.add("hidden");
+    }
+
+    async function submitProductApplication(prod_id) {
+      try {
+        await apiPost("applyProduct", { student_id: currentUser.student_id, prod_id });
+        showToast("상품 신청이 접수되었습니다. 담임 교사 승인 후 개설됩니다.", "success");
+        closeApplyProductModal();
+      } catch (err) {
+        // Handled in apiPost
+      }
+    }
+
+    /* ==========================================================================
+       TEACHER DASHBOARD
+       ========================================================================== */
+    function switchTeacherTab(tabKey) {
+      document.getElementById("teacher-tab-pending").classList.add("hidden");
+      document.getElementById("teacher-tab-deposit").classList.add("hidden");
+      document.getElementById("teacher-tab-kiosk-admin").classList.add("hidden");
+
+      document.getElementById("tab-btn-pending").className = "pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+      document.getElementById("tab-btn-deposit").className = "pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+      document.getElementById("tab-btn-kiosk-admin").className = "pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+
+      if (tabKey === 'pending') {
+        document.getElementById("teacher-tab-pending").classList.remove("hidden");
+        document.getElementById("tab-btn-pending").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold";
+        loadPendingApplications();
+      } else if (tabKey === 'deposit') {
+        document.getElementById("teacher-tab-deposit").classList.remove("hidden");
+        document.getElementById("tab-btn-deposit").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold";
+      } else if (tabKey === 'kiosk-admin') {
+        document.getElementById("teacher-tab-kiosk-admin").classList.remove("hidden");
+        document.getElementById("tab-btn-kiosk-admin").className = "pb-3 border-b-2 border-blue-600 text-blue-600 transition font-bold font-bold";
+      }
+    }
+
+    async function loadTeacherDashboard() {
+      switchTeacherTab('pending');
+    }
+
+    async function loadPendingApplications() {
+      const tbody = document.getElementById("teacher-pending-tbody");
+      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400"><i class="fa-solid fa-spinner animate-spin"></i> 로딩 중...</td></tr>`;
+
+      try {
+        globalPending = await apiGet("Pending");
+        tbody.innerHTML = "";
+
+        if (globalPending.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">대기 중인 신청 건이 없습니다.</td></tr>`;
+          return;
+        }
+
+        globalPending.forEach(p => {
+          const isPending = p.Status === "PENDING";
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td class="py-3 font-mono font-medium">${p.App_ID}</td>
+            <td class="py-3 font-bold">${p.Student_ID}</td>
+            <td class="py-3">${p.Prod_Name || p.Prod_ID}</td>
+            <td class="py-3 text-slate-400">${p.Timestamp ? new Date(p.Timestamp).toLocaleString() : '-'}</td>
+            <td class="py-3 text-center">
+              ${isPending ? `
+                <div class="flex justify-center gap-1.5">
+                  <button onclick="approveApplication('${p.App_ID}', 'APPROVED')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition font-semibold">승인</button>
+                  <button onclick="approveApplication('${p.App_ID}', 'REJECTED')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition font-semibold">거절</button>
+                </div>
+              ` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.Status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${p.Status}</span>`}
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-rose-500">불러오기 실패</td></tr>`;
+      }
+    }
+
+    async function approveApplication(app_id, action_status) {
+      try {
+        await apiPost("approve", { app_id, action_status });
+        showToast(`신청이 ${action_status === 'APPROVED' ? '승인' : '거절'} 되었습니다.`, "success");
+        loadPendingApplications();
+      } catch (err) {
+        // Handled in apiPost
+      }
+    }
+
+    async function handleTeacherDepositSubmit(e) {
+      e.preventDefault();
+      const student_id = document.getElementById("teacher-dep-student-id").value.trim();
+      const amount = Number(document.getElementById("teacher-dep-amount").value);
+      const desc = document.getElementById("teacher-dep-desc").value.trim();
+
+      try {
+        await apiPost("teacherDeposit", { student_id, amount, desc });
+        showToast("지급금이 정상적으로 입금되었습니다.", "success");
+        document.getElementById("teacher-deposit-form").reset();
+      } catch (err) {
+        // Handled in apiPost
+      }
+    }
+
+    async function handleAddKioskItemSubmit(e) {
+      e.preventDefault();
+      const store_name = document.getElementById("kiosk-reg-store").value.trim();
+      const category = document.getElementById("kiosk-reg-category").value.trim();
+      const item_name = document.getElementById("kiosk-reg-name").value.trim();
+      const price = Number(document.getElementById("kiosk-reg-price").value);
+      const image_url = document.getElementById("kiosk-reg-image").value.trim();
+
+      try {
+        await apiPost("addKioskItem", { store_name, category, item_name, price, image_url });
+        showToast("매점 상품이 성공적으로 추가되었습니다.", "success");
+        document.getElementById("teacher-kiosk-item-form").reset();
+      } catch (err) {
+        // Handled in apiPost
+      }
+    }
+
+    /* ==========================================================================
+       KIOSK MODE & NFC PAYMENT
+       ========================================================================== */
+    async function launchKioskMode() {
+      const modal = document.getElementById("modal-kiosk");
+      modal.classList.remove("hidden");
+      cart = [];
+      updateCartUI();
+
+      try {
+        globalKioskItems = await apiGet("KioskStores");
+        renderKioskStoreTabs();
+        renderKioskItems("ALL");
+      } catch (err) {
+        console.error("Kiosk load error:", err);
+      }
+    }
+
+    function closeKioskMode() {
+      document.getElementById("modal-kiosk").classList.add("hidden");
+    }
+
+    function renderKioskStoreTabs() {
+      const tabsContainer = document.getElementById("kiosk-store-tabs");
+      tabsContainer.innerHTML = "";
+
+      // Extract unique store names
+      const stores = ["ALL", ...new Set(globalKioskItems.map(item => item.Store_Name).filter(Boolean))];
+
+      stores.forEach(store => {
+        const btn = document.createElement("button");
+        btn.className = `px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${currentStoreFilter === store ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`;
+        btn.innerText = store === "ALL" ? "전체 상품" : store;
+        btn.onclick = () => {
+          currentStoreFilter = store;
+          renderKioskStoreTabs();
+          renderKioskItems(store);
+        };
+        tabsContainer.appendChild(btn);
+      });
+    }
+
+    function renderKioskItems(storeFilter) {
+      const grid = document.getElementById("kiosk-items-grid");
+      grid.innerHTML = "";
+
+      const filtered = storeFilter === "ALL" ? globalKioskItems : globalKioskItems.filter(i => i.Store_Name === storeFilter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">등록된 상품이 없습니다.</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const isHttp = item.Image_URL && item.Image_URL.toLowerCase().startsWith("http");
+        const priceNum = Number(item.Price || 0);
+
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between group";
+        card.onclick = () => addToCart(item);
+
+        card.innerHTML = `
+          <div>
+            <div class="w-full h-28 bg-slate-50 rounded-xl flex items-center justify-center mb-3 overflow-hidden border border-slate-100">
+              ${isHttp ? `
+                <img src="${item.Image_URL}" alt="${item.Item_Name}" class="w-full h-full object-cover group-hover:scale-105 transition" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-cookie-bite text-3xl text-emerald-400\'></i>';">
+              ` : `
+                <i class="${item.Image_URL || 'fa-solid fa-cookie-bite'} text-3xl text-emerald-500 group-hover:scale-110 transition"></i>
+              `}
+            </div>
+            <span class="text-[10px] font-bold text-slate-400">${item.Store_Name || '매점'}</span>
+            <h4 class="font-bold text-slate-800 text-xs line-clamp-1 mt-0.5">${item.Item_Name}</h4>
+          </div>
+          <div class="mt-3 flex justify-between items-center">
+            <span class="text-sm font-black text-emerald-600">${priceNum.toLocaleString()} 원</span>
+            <span class="w-7 h-7 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition">
+              <i class="fa-solid fa-plus text-xs"></i>
+            </span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function addToCart(item) {
+      const existing = cart.find(i => i.Store_ID === item.Store_ID);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ ...item, qty: 1 });
+      }
+      updateCartUI();
+    }
+
+    function updateCartQty(store_id, delta) {
+      const idx = cart.findIndex(i => i.Store_ID === store_id);
+      if (idx > -1) {
+        cart[idx].qty += delta;
+        if (cart[idx].qty <= 0) {
+          cart.splice(idx, 1);
+        }
+      }
+      updateCartUI();
+    }
+
+    function clearCart() {
+      cart = [];
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const container = document.getElementById("kiosk-cart-items");
+      container.innerHTML = "";
+
+      let total = 0;
+
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">장바구니가 비어 있습니다.</div>`;
+        document.getElementById("kiosk-cart-total").innerText = "0 원";
+        return;
+      }
+
+      cart.forEach(item => {
+        const itemTotal = Number(item.Price) * item.qty;
+        total += itemTotal;
+
+        const row = document.createElement("div");
+        row.className = "py-2.5 flex justify-between items-center";
+        row.innerHTML = `
+          <div class="min-w-0 flex-1 pr-2">
+            <h5 class="font-bold text-slate-800 text-xs truncate">${item.Item_Name}</h5>
+            <p class="text-[10px] text-slate-400">${Number(item.Price).toLocaleString()}원</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+              <button onclick="updateCartQty('${item.Store_ID}', -1)" class="w-5 h-5 text-slate-600 hover:bg-white rounded font-bold text-xs flex items-center justify-center">-</button>
+              <span class="w-6 text-center text-xs font-bold text-slate-800">${item.qty}</span>
+              <button onclick="updateCartQty('${item.Store_ID}', 1)" class="w-5 h-5 text-slate-600 hover:bg-white rounded font-bold text-xs flex items-center justify-center">+</button>
+            </div>
+            <span class="text-xs font-bold text-slate-900 min-w-[50px] text-right">${itemTotal.toLocaleString()}원</span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      document.getElementById("kiosk-cart-total").innerText = `${total.toLocaleString()} 원`;
+    }
+
+    function openNfcPaymentModal() {
+      if (cart.length === 0) {
+        showToast("장바구니에 상품을 담아주세요.", "error");
+        return;
+      }
+
+      const total = cart.reduce((sum, i) => sum + Number(i.Price) * i.qty, 0);
+
+      triggerNfcModal(
+        "키오스크 NFC 결제",
+        `총 ${total.toLocaleString()}원 결제 - 학생증을 태그하세요`,
+        async (simulatedStudentId) => {
+          // Execute payment via transfer or ATM withdrawal logic
+          try {
+            // Find student checking account
+            const accs = await apiGet("Accounts", { student_id: simulatedStudentId });
+            const checking = accs.find(a => a.Acc_Type === "CHECKING") || accs[0];
+
+            if (!checking) throw new Error("해당 학생의 계좌를 찾을 수 없습니다.");
+            if (Number(checking.Balance) < total) throw new Error("잔액이 부족하여 결제할 수 없습니다.");
+
+            const itemNames = cart.map(i => `${i.Item_Name}x${i.qty}`).join(", ");
+            await apiPost("atmTransaction", {
+              type: "WITHDRAWAL",
+              acc_id: checking.Acc_ID,
+              amount: total,
+              student_id: simulatedStudentId,
+              desc: `[매점결제] ${itemNames}`
+            });
+
+            showToast("결제가 완료되었습니다! 이용해 주셔서 감사합니다.", "success");
+            clearCart();
+          } catch (err) {
+            // Handled
+          }
+        }
+      );
+    }
+
+    /* ==========================================================================
+       ATM MODE (★ CORE REQUIREMENT ★)
+       ========================================================================== */
+    async function launchAtmMode() {
+      const modal = document.getElementById("modal-atm");
+      modal.classList.remove("hidden");
+      renderAtmMainMenu();
+    }
+
+    function closeAtmMode() {
+      document.getElementById("modal-atm").classList.add("hidden");
+    }
+
+    function renderAtmMainMenu() {
+      const container = document.getElementById("atm-screen-content");
+      container.innerHTML = `
+        <div class="text-center space-y-2 mb-8">
+          <span class="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-full text-xs font-semibold">스마트 센서 대기 중</span>
+          <h3 class="text-2xl md:text-3xl font-black text-white">원하시는 금융 거래를 선택해 주세요</h3>
+          <p class="text-xs text-slate-400">IC 카드 / NFC 학생증을 이용한 통합 금융 서비스</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 md:gap-6 my-auto">
+          <button onclick="atmStepInquiry()" class="p-6 md:p-8 bg-gradient-to-br from-blue-800 to-indigo-900 hover:from-blue-700 hover:to-indigo-800 border border-blue-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
+            <i class="fa-solid fa-magnifying-glass-dollar text-4xl text-blue-300 group-hover:scale-110 transition"></i>
+            <span class="text-base md:text-lg font-extrabold text-white">예금 조회</span>
+            <span class="text-[11px] text-blue-200">잔액 및 거래 내역</span>
+          </button>
+
+          <button onclick="atmStepDeposit()" class="p-6 md:p-8 bg-gradient-to-br from-emerald-800 to-teal-900 hover:from-emerald-700 hover:to-teal-800 border border-emerald-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
+            <i class="fa-solid fa-money-bill-transfer text-4xl text-emerald-300 group-hover:scale-110 transition"></i>
+            <span class="text-base md:text-lg font-extrabold text-white">현금 입금</span>
+            <span class="text-[11px] text-emerald-200">계좌에 현금 넣기</span>
+          </button>
+
+          <button onclick="atmStepWithdrawal()" class="p-6 md:p-8 bg-gradient-to-br from-amber-800 to-orange-900 hover:from-amber-700 hover:to-orange-800 border border-amber-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
+            <i class="fa-solid fa-hand-holding-dollar text-4xl text-amber-300 group-hover:scale-110 transition"></i>
+            <span class="text-base md:text-lg font-extrabold text-white">현금 출금</span>
+            <span class="text-[11px] text-amber-200">계좌에서 현금 찾기</span>
+          </button>
+
+          <button onclick="atmStepTransferInit()" class="p-6 md:p-8 bg-gradient-to-br from-purple-800 to-violet-900 hover:from-purple-700 hover:to-violet-800 border border-purple-600/40 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 group transition transform hover:-translate-y-1">
+            <i class="fa-solid fa-paper-plane text-4xl text-purple-300 group-hover:scale-110 transition"></i>
+            <span class="text-base md:text-lg font-extrabold text-white">계좌 이체</span>
+            <span class="text-[11px] text-purple-200">타 계좌로 송금하기</span>
+          </button>
+        </div>
+      `;
+    }
+
+    // ATM 1: Inquiry
+    function atmStepInquiry() {
+      triggerNfcModal("ATM 예금 조회", "학생증을 태그하여 잔액을 조회합니다", async (studentId) => {
+        try {
+          const accs = await apiGet("Accounts", { student_id: studentId });
+          const container = document.getElementById("atm-screen-content");
+          
+          let cardsHtml = accs.map(a => `
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+              <div>
+                <p class="text-xs text-blue-400 font-bold">${a.Acc_Name} (${a.Acc_Type})</p>
+                <p class="text-[11px] font-mono text-slate-400">${a.Acc_ID}</p>
+              </div>
+              <p class="text-xl font-black text-emerald-400">${Number(a.Balance).toLocaleString()} 원</p>
+            </div>
+          `).join("");
+
+          container.innerHTML = `
+            <div class="space-y-6 max-w-xl mx-auto w-full my-auto">
+              <div class="text-center">
+                <h3 class="text-xl font-bold text-white">${studentId} 학생 보유 계좌 목록</h3>
+              </div>
+              <div class="space-y-3">${cardsHtml || '<p class="text-center text-slate-400">계좌가 없습니다.</p>'}</div>
+              <button onclick="renderAtmMainMenu()" class="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl">처음 화면으로</button>
+            </div>
+          `;
+        } catch (err) {}
+      });
+    }
+
+    // ATM 2: Deposit
+    function atmStepDeposit() {
+      const container = document.getElementById("atm-screen-content");
+      container.innerHTML = `
+        <div class="max-w-md mx-auto w-full space-y-5 my-auto">
+          <h3 class="text-xl font-bold text-center text-white">ATM 현금 입금</h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">입금할 계좌번호 (Acc_ID)</label>
+            <input type="text" id="atm-dep-acc" placeholder="예: ACC-17000000" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">입금 금액 (원)</label>
+            <input type="number" id="atm-dep-amount" min="1" placeholder="0" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div class="flex gap-3">
+            <button onclick="renderAtmMainMenu()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button>
+            <button onclick="executeAtmDeposit()" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl">입금 태그 진행</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function executeAtmDeposit() {
+      const acc_id = document.getElementById("atm-dep-acc").value.trim();
+      const amount = Number(document.getElementById("atm-dep-amount").value);
+
+      if (!acc_id || amount <= 0) {
+        showToast("계좌번호와 금액을 올바르게 입력해주세요.", "error");
+        return;
+      }
+
+      triggerNfcModal("ATM 현금 입금 승인", "학생증을 태그하여 입금을 완료합니다", async (studentId) => {
+        try {
+          await apiPost("atmTransaction", { type: "DEPOSIT", acc_id, amount, student_id: studentId });
+          showToast("[ATM] 현금 입금이 정상 완료되었습니다.", "success");
+          renderAtmMainMenu();
+        } catch(e) {}
+      });
+    }
+
+    // ATM 3: Withdrawal
+    function atmStepWithdrawal() {
+      const container = document.getElementById("atm-screen-content");
+      container.innerHTML = `
+        <div class="max-w-md mx-auto w-full space-y-5 my-auto">
+          <h3 class="text-xl font-bold text-center text-white">ATM 현금 출금</h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">출금할 계좌번호 (Acc_ID)</label>
+            <input type="text" id="atm-wd-acc" placeholder="예: ACC-17000000" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">출금 금액 (원)</label>
+            <input type="number" id="atm-wd-amount" min="1" placeholder="0" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div class="flex gap-3">
+            <button onclick="renderAtmMainMenu()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button>
+            <button onclick="executeAtmWithdrawal()" class="flex-1 py-3 bg-amber-600 text-white font-bold rounded-xl">출금 태그 진행</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function executeAtmWithdrawal() {
+      const acc_id = document.getElementById("atm-wd-acc").value.trim();
+      const amount = Number(document.getElementById("atm-wd-amount").value);
+
+      if (!acc_id || amount <= 0) {
+        showToast("계좌번호와 금액을 올바르게 입력해주세요.", "error");
+        return;
+      }
+
+      triggerNfcModal("ATM 현금 출금 승인", "학생증을 태그하여 출금을 승인합니다", async (studentId) => {
+        try {
+          await apiPost("atmTransaction", { type: "WITHDRAWAL", acc_id, amount, student_id: studentId });
+          showToast("[ATM] 현금 출금이 완료되었습니다. 현금을 수령하세요.", "success");
+          renderAtmMainMenu();
+        } catch(e) {}
+      });
+    }
+
+    // ATM 4: Transfer (★ WITH VOICE PHISHING WARNING MODAL ★)
+    function atmStepTransferInit() {
+      const container = document.getElementById("atm-screen-content");
+      container.innerHTML = `
+        <div class="max-w-md mx-auto w-full space-y-5 my-auto">
+          <h3 class="text-xl font-bold text-center text-white">ATM 계좌 이체</h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">출금 계좌번호 (Acc_ID)</label>
+            <input type="text" id="atm-tr-from" placeholder="내 계좌 ACC-1111" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">입금 대상 계좌번호 (Target Acc_ID)</label>
+            <input type="text" id="atm-tr-to" placeholder="상대방 계좌 ACC-2222" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">이체 금액 (원)</label>
+            <input type="number" id="atm-tr-amount" min="1" placeholder="0" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm">
+          </div>
+          <div class="flex gap-3">
+            <button onclick="renderAtmMainMenu()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button>
+            <button onclick="triggerVoicePhishingCheck()" class="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl">이체 단계 진행</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function triggerVoicePhishingCheck() {
+      const acc_id = document.getElementById("atm-tr-from").value.trim();
+      const target_acc_id = document.getElementById("atm-tr-to").value.trim();
+      const amount = Number(document.getElementById("atm-tr-amount").value);
+
+      if (!acc_id || !target_acc_id || amount <= 0) {
+        showToast("모든 정보를 올바르게 입력해주세요.", "error");
+        return;
+      }
+
+      atmPendingTransferData = { acc_id, target_acc_id, amount };
+      
+      // SHOW VOICE PHISHING MODAL FIRST!
+      document.getElementById("modal-voice-phishing").classList.remove("hidden");
+    }
+
+    function closeVoicePhishingModal(confirmed) {
+      document.getElementById("modal-voice-phishing").classList.add("hidden");
+
+      if (confirmed && atmPendingTransferData) {
+        // Proceed to NFC Tag step
+        triggerNfcModal("ATM 계좌 이체 최종 승인", "학생증을 태그하여 이체를 확정합니다", async (studentId) => {
+          try {
+            await apiPost("atmTransaction", {
+              type: "TRANSFER",
+              acc_id: atmPendingTransferData.acc_id,
+              target_acc_id: atmPendingTransferData.target_acc_id,
+              amount: atmPendingTransferData.amount,
+              student_id: studentId
+            });
+            showToast("[ATM] 계좌이체가 정상 완료되었습니다.", "success");
+            atmPendingTransferData = null;
+            renderAtmMainMenu();
+          } catch(e) {}
+        });
+      } else {
+        atmPendingTransferData = null;
+        showToast("보이스피싱 예방을 위해 이체가 취소되었습니다.", "info");
+      }
+    }
+
+    /* ==========================================================================
+       NFC POPUP SIMULATOR
+       ========================================================================== */
+    async function triggerNfcModal(title, desc, callback) {
+      document.getElementById("nfc-modal-title").innerText = title;
+      document.getElementById("nfc-modal-desc").innerText = desc;
+      nfcCallback = callback;
+
+      // Load student list into select dropdown
+      const select = document.getElementById("nfc-simulated-student-id");
+      select.innerHTML = `<option value="">불러오는 중...</option>`;
+
+      document.getElementById("modal-nfc-tag").classList.remove("hidden");
+
+      try {
+        if (globalUsers.length === 0) {
+          globalUsers = await apiGet("Users");
+        }
+        select.innerHTML = "";
+        globalUsers.forEach(u => {
+          const opt = document.createElement("option");
+          opt.value = u.Student_ID;
+          opt.innerText = `${u.Name} (${u.Student_ID})`;
+          select.appendChild(opt);
+        });
+
+        // Pre-select current logged-in student if applicable
+        if (currentUser && currentUser.student_id) {
+          select.value = currentUser.student_id;
+        }
+      } catch (e) {
+        select.innerHTML = `<option value="${currentUser ? currentUser.student_id : '10101'}">기본 학생 (10101)</option>`;
+      }
+    }
+
+    function closeNfcModal() {
+      document.getElementById("modal-nfc-tag").classList.add("hidden");
+      nfcCallback = null;
+    }
+
+    async function confirmNfcTag() {
+      const studentId = document.getElementById("nfc-simulated-student-id").value;
+      if (!studentId) {
+        showToast("학생을 선택해 주세요.", "error");
+        return;
+      }
+
+      const cb = nfcCallback;
+      closeNfcModal();
+
+      if (cb) {
+        await cb(studentId);
+      }
+    }
+  </script>
 </body>
 </html>
