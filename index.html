@@ -652,6 +652,7 @@
       try {
         const res = await apiPost("login", { student_id, pin });
         currentUser = res.user;
+        checkUserRole(currentUser);
         localStorage.setItem("class_economy_user", JSON.stringify(currentUser));
         showToast("반갑습니다! 로그인되었습니다.", "success");
         onLoginSuccess();
