@@ -611,13 +611,28 @@
       }, 3500);
     }
 
-    function showView(viewId) {
-      document.getElementById("view-login").classList.add("hidden");
-      document.getElementById("view-student").classList.add("hidden");
-      document.getElementById("view-teacher").classList.add("hidden");
+   function showView(viewId) {
+  // 1. 모든 화면 일단 숨기기
+  document.getElementById("view-login").classList.add("hidden");
+  document.getElementById("view-student").classList.add("hidden");
+  document.getElementById("view-teacher").classList.add("hidden");
 
-      document.getElementById(viewId).classList.remove("hidden");
+  // 2. 요청된 화면 켜기
+  const targetView = document.getElementById(viewId);
+  if (targetView) {
+    targetView.classList.remove("hidden");
+  }
+
+  // 3. ⭐ [핵심!] 로그인한 사람이 학생인데 '교사 화면'을 열려고 하거나, 
+  //    학생 화면 내부에서 교사 포털이 보이려 하면 강제로 숨겨버립니다!
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role !== 'teacher') {
+    const teacherView = document.getElementById("view-teacher");
+    if (teacherView) {
+      teacherView.classList.add("hidden");
+      teacherView.style.setProperty('display', 'none', 'important');
     }
+  }
+}
 
     /* AUTH TABS (LOGIN / REGISTER) */
     function switchAuthTab(type) {
